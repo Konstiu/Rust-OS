@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "blog_os"
+name = "LowLevelProgrammingProject"
 version = "0.1.0"
 dependencies = [
  "bootloader",
