@@ -2,7 +2,12 @@
 name = "rust_os"
 version = "0.1.0"
 edition = "2024"
-authors = ["Unterweger Konstantin <konstantin.Unterweger@gmail.com>", "Köppl Michael <michael@koeppl.dev>", "Loidolt Lukas <>", "Pritzl Johannes Benedikt <>"]
+authors = [
+    "Unterweger Konstantin <konstantin.Unterweger@gmail.com>",
+    "Köppl Michael <michael@koeppl.dev>",
+    "Loidolt Lukas <>",
+    "Pritzl Johannes Benedikt <>",
+]
 
 [profile.dev]
 panic = "abort"
