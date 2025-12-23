@@ -142,3 +142,20 @@ pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
     WRITER.lock().write_fmt(args).unwrap();
 }
+
+#[test_case]
+fn test_println_many() {
+    for _ in 0..200 {
+        println!("test_println_many output");
+    }
+}
+
+#[test_case]
+fn test_println_output() {
+    let s = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod";
+    println!("{}", s);
+    for (i, c) in s.chars().enumerate() {
+        let sc = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
+        assert_eq!(char::from(sc.ascii_character), c);
+    }
+}
