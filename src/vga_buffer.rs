@@ -1,8 +1,7 @@
-use volatile::Volatile;
 use core::fmt;
 use lazy_static::lazy_static;
 use spin::Mutex;
-
+use volatile::Volatile;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,7 +25,6 @@ pub enum Color {
     White = 15,
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
 struct ColorCode(u8);
@@ -36,7 +34,6 @@ impl ColorCode {
         ColorCode((background as u8) << 4 | (foreground as u8))
     }
 }
-
 
 lazy_static! {
     pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
@@ -66,7 +63,6 @@ pub struct Writer {
     buffer: &'static mut Buffer,
     color_code: ColorCode,
 }
-
 
 impl Writer {
     pub fn write_byte(&mut self, byte: u8) {
@@ -100,7 +96,7 @@ impl Writer {
         self.clear_row(BUFFER_HEIGHT - 1);
         self.column_position = 0;
     }
-    
+
     fn clear_row(&mut self, row: usize) {
         let blank = ScreenChar {
             ascii_character: b' ',
@@ -110,7 +106,6 @@ impl Writer {
             self.buffer.chars[row][col].write(blank);
         }
     }
-
 
     pub fn write_string(&mut self, s: &str) {
         for byte in s.bytes() {
@@ -124,14 +119,12 @@ impl Writer {
     }
 }
 
-
 impl fmt::Write for Writer {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.write_string(s);
         Ok(())
     }
 }
-
 
 #[macro_export]
 macro_rules! print {
