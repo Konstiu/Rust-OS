@@ -11,7 +11,7 @@ lazy_static! {
     };
 }
 
-pub fn load_idt() {
+pub fn load_interrupt_descriptor_table() {
     INTERRUPT_DESCRIPTOR_TABLE.load();
 }
 
