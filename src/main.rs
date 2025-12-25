@@ -15,6 +15,9 @@ mod interrupts;
 pub extern "C" fn _start() -> ! {
     println!("Hello World{}", "!");
 
+    // allow CPU to handle interrupts
+    interrupts::load_interrupt_descriptor_table();
+
     #[cfg(test)]
     test_main();
 
