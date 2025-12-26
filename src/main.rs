@@ -3,24 +3,15 @@
 #![feature(custom_test_frameworks)]
 #![test_runner(rust_os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
-#![feature(abi_x86_interrupt)]
-
 use core::panic::PanicInfo;
+use rust_os::{init_kernel, println, print, test_panic_handler};
 
-#[cfg(test)]
-use rust_os::test_panic_handler;
-
-mod qemu;
-mod serial;
-mod vga_buffer;
-mod interrupts;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() -> ! {
     println!("Hello World{}", "!");
 
-    // allow CPU to handle interrupts
-    interrupts::load_interrupt_descriptor_table();
+    init_kernel();
 
     #[cfg(test)]
     test_main();
