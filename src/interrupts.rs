@@ -18,3 +18,11 @@ pub fn load_interrupt_descriptor_table() {
 extern "x86-interrupt" fn breakpoint_handler(frame: InterruptStackFrame) {
     println!("EXCEPTION: BREAKPOINT HIT\n{:#?}", frame)
 }
+
+#[cfg(test)]
+mod tests {
+    #[test_case]
+    fn test_breakpoint_interrupt() {
+        x86_64::instructions::interrupts::int3();
+    }   
+}
