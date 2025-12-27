@@ -6,6 +6,7 @@
 #![reexport_test_harness_main = "test_main"]
 
 use core::panic::PanicInfo;
+//use bootloader::{BootInfo, entry_point};
 
 use x86_64::instructions::hlt;
 
@@ -14,6 +15,7 @@ pub mod interrupts;
 pub mod qemu;
 pub mod serial;
 pub mod vga_buffer;
+pub mod memory;
 
 pub fn init_kernel() {
     gdt::initialize_global_descriptor_table();
@@ -63,8 +65,10 @@ pub fn hlt_loop() -> ! {
 }
 
 #[cfg(test)]
-#[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
+entry_point!(test_kernel_main);
+
+#[cfg(test)]
+fn test_kernel_main(_boot_info: &'static BootInfo) -> ! {
     init_kernel();
     test_main();
     hlt_loop()

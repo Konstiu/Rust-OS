@@ -1,11 +1,19 @@
 use lazy_static::lazy_static;
 use pc_keyboard::{DecodedKey, Keyboard, ScancodeSet1, layouts};
 use spin::Mutex;
-use x86_64::{instructions::port::Port, structures::idt::{InterruptDescriptorTable, InterruptStackFrame}};
+use x86_64::{instructions::port::Port, structures::idt::{PageFaultErrorCode, InterruptDescriptorTable, InterruptStackFrame}};
 use pic8259::ChainedPics;
+use x86_64::registers::control::Cr2;
 
-use crate::{gdt, print, println};
+use crate::{gdt, print, println, hlt_loop};
 
+extern "x86-interrupt" fn page_fault_handler(stack_frame: InterruptStackFrame, error_code: PageFaultErrorCode,) {
+    println!("EXCEPTION: PAGE FAULT");
+    println!("Accessed Address: {:?}", Cr2::read());
+    println!("Error Code: {:?}", error_code);
+    println!("{:#?}", stack_frame);
+    hlt_loop();
+}
 
 lazy_static! {
     static ref INTERRUPT_DESCRIPTOR_TABLE: InterruptDescriptorTable = {
@@ -17,6 +25,7 @@ lazy_static! {
         }
         interrupt_descriptor_table[u8::from(InterruptIndex::Timer)].set_handler_fn(timer_interrupt_handler);
         interrupt_descriptor_table[u8::from(InterruptIndex::Keyboard)].set_handler_fn(keyboard_interrupt_handler);
+        interrupt_descriptor_table.page_fault.set_handler_fn(page_fault_handler);
         interrupt_descriptor_table
     };
 }
