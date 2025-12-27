@@ -1,6 +1,7 @@
 use lazy_static::lazy_static;
+use pc_keyboard::{DecodedKey, Keyboard, ScancodeSet1, layouts};
 use spin::Mutex;
-use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
+use x86_64::{instructions::port::Port, structures::idt::{InterruptDescriptorTable, InterruptStackFrame}};
 use pic8259::ChainedPics;
 
 use crate::{gdt, print, println};
@@ -15,8 +16,18 @@ lazy_static! {
             .set_stack_index(gdt::DOUBLE_FAULT_IST_INDEX);
         }
         interrupt_descriptor_table[u8::from(InterruptIndex::Timer)].set_handler_fn(timer_interrupt_handler);
+        interrupt_descriptor_table[u8::from(InterruptIndex::Keyboard)].set_handler_fn(keyboard_interrupt_handler);
         interrupt_descriptor_table
     };
+}
+
+lazy_static! {
+    static ref KEYBOARD: Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>> = Mutex::new(
+        Keyboard::new(
+            ScancodeSet1::new(),
+            layouts::Us104Key,
+            pc_keyboard::HandleControl::Ignore
+        ));
 }
 
 const PIC_1_OFFSET: u8 = 32;
@@ -30,6 +41,7 @@ static PICS: spin::Mutex<ChainedPics> = Mutex::new(unsafe {
 #[repr(u8)]
 enum InterruptIndex {
     Timer = PIC_1_OFFSET,
+    Keyboard
 }
 
 impl From<InterruptIndex> for u8 {
@@ -63,6 +75,25 @@ extern "x86-interrupt" fn timer_interrupt_handler(_: InterruptStackFrame) {
     unsafe {
         PICS.lock()
             .notify_end_of_interrupt(u8::from(InterruptIndex::Timer));
+    }
+}
+
+extern "x86-interrupt" fn keyboard_interrupt_handler(_: InterruptStackFrame) {
+    let mut keyboard = KEYBOARD.lock();
+    let mut ps2_port: Port<u8> =  Port::new(0x60);
+    let scancode = unsafe { ps2_port.read() };
+
+    if let Ok(Some(key_event)) = keyboard.add_byte(scancode)
+        && let Some(key) = keyboard.process_keyevent(key_event) {
+            match key {
+                DecodedKey::Unicode(character) => print!("{character}"),
+                DecodedKey::RawKey(raw_key) => print!("{raw_key:?}")
+            }
+        }
+    
+    unsafe {
+        PICS.lock()
+            .notify_end_of_interrupt(u8::from(InterruptIndex::Keyboard));
     }
 }
 
