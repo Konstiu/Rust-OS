@@ -15,12 +15,11 @@ pub extern "C" fn _start() -> ! {
 }
 
 #[panic_handler]
-fn test_panic_handler(_info: &PanicInfo) -> ! {
-    rust_os::test_panic_handler(_info) 
+fn panic(info: &PanicInfo) -> ! {
+    rust_os::test_panic_handler(info)
 }
 
 #[test_case]
-fn trivial_integration_test() {
-   println!("Tests _start entry point and simple print statement") 
+fn test_println() {
+    println!("test_println has output");
 }
-

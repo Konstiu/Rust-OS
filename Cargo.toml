@@ -33,6 +33,12 @@ name = "rust_os"
 test = true
 bench = false
 
+[[test]]
+# We don't need the harness flag for tests that only have a single test
+# function
+name = "should_panic"
+harness = false
+
 [package.metadata.bootimage]
 test-args = [
     "-device",

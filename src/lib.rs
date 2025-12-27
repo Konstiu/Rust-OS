@@ -1,5 +1,6 @@
 #![no_std]
-#![no_main]
+
+#![cfg_attr(test, no_main)]
 #![feature(custom_test_frameworks)]
 #![feature(abi_x86_interrupt)]
 #![test_runner(crate::test_runner)]
@@ -8,6 +9,7 @@
 use core::panic::PanicInfo;
 
 use x86_64::instructions::hlt;
+use crate::qemu::{QemuExitCode, exit_qemu};
 
 pub mod gdt;
 pub mod interrupts;
@@ -36,22 +38,17 @@ where
 }
 
 pub fn test_runner(tests: &[&dyn Testable]) {
-    use crate::qemu::exit_qemu;
-
     serial_println!("Running {} tests", tests.len());
     for test in tests {
         test.run();
     }
-
-    exit_qemu(qemu::QemuExitCode::Success);
+    exit_qemu(QemuExitCode::Success);
 }
 
-pub fn test_panic_handler(_info: &PanicInfo) -> ! {
-    use crate::qemu::exit_qemu;
-
+pub fn test_panic_handler(info: &PanicInfo) -> ! {
     serial_println!("[failed]\n");
-    serial_println!("Error: {}\n", _info);
-    exit_qemu(qemu::QemuExitCode::Failed);
+    serial_println!("Error: {}\n", info);
+    exit_qemu(QemuExitCode::Failed);
 
     hlt_loop()
 }
@@ -72,12 +69,6 @@ pub extern "C" fn _start() -> ! {
 
 #[cfg(test)]
 #[panic_handler]
-fn _test_panic_handler(_info: &PanicInfo) -> ! {
-    test_panic_handler(_info)
-}
-
-#[test_case]
-#[allow(clippy::eq_op)]
-fn trivial_assertion() {
-    assert_eq!(1, 1);
+fn panic(info: &PanicInfo) -> ! {
+    test_panic_handler(info)
 }
