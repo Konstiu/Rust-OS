@@ -4,7 +4,7 @@
 #![test_runner(rust_os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 use core::panic::PanicInfo;
-use rust_os::{init_kernel, println, print, test_panic_handler};
+use rust_os::{hlt_loop, init_kernel, print, println, test_panic_handler};
 
 
 #[unsafe(no_mangle)]
@@ -16,7 +16,7 @@ pub extern "C" fn _start() -> ! {
     #[cfg(test)]
     test_main();
 
-    loop {}
+    hlt_loop()
 }
 
 fn get_bad_index() -> usize {
@@ -28,7 +28,7 @@ fn get_bad_index() -> usize {
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     print!("{}", _info);
-    loop {}
+    hlt_loop()
 }
 
 #[cfg(test)]

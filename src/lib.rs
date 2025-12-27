@@ -7,6 +7,8 @@
 
 use core::panic::PanicInfo;
 
+use x86_64::instructions::hlt;
+
 pub mod gdt;
 pub mod interrupts;
 pub mod qemu;
@@ -51,7 +53,13 @@ pub fn test_panic_handler(_info: &PanicInfo) -> ! {
     serial_println!("Error: {}\n", _info);
     exit_qemu(qemu::QemuExitCode::Failed);
 
-    loop {}
+    hlt_loop()
+}
+
+pub fn hlt_loop() -> ! {
+    loop {
+        hlt();
+    }
 }
 
 #[cfg(test)]
@@ -59,7 +67,7 @@ pub fn test_panic_handler(_info: &PanicInfo) -> ! {
 pub extern "C" fn _start() -> ! {
     init_kernel();
     test_main();
-    loop {}
+    hlt_loop()
 }
 
 #[cfg(test)]
