@@ -2,6 +2,8 @@ use core::fmt;
 use lazy_static::lazy_static;
 use spin::Mutex;
 use volatile::Volatile;
+use x86_64::instructions::interrupts::without_interrupts;
+use core::fmt::Write;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -139,23 +141,29 @@ macro_rules! println {
 
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
-    use core::fmt::Write;
-    WRITER.lock().write_fmt(args).unwrap();
+    without_interrupts(|| {
+     WRITER.lock().write_fmt(args).unwrap();       
+    })
 }
 
 #[test_case]
 fn test_println_many() {
-    for _ in 0..200 {
-        println!("test_println_many output");
-    }
+    without_interrupts(|| {
+        for _ in 0..200 {
+            println!("test_println_many output");
+        }       
+    })
 }
 
 #[test_case]
 fn test_println_output() {
     let s = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod";
-    println!("{}", s);
-    for (i, c) in s.chars().enumerate() {
-        let sc = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
-        assert_eq!(char::from(sc.ascii_character), c);
-    }
+    without_interrupts(|| {
+        let mut writer = WRITER.lock();
+        writeln!(writer, "\n{}", s).expect("writing to screen failed");
+        for (i, c) in s.chars().enumerate() {
+            let sc = writer.buffer.chars[BUFFER_HEIGHT - 2][i].read();
+            assert_eq!(char::from(sc.ascii_character), c);
+        }       
+    })
 }

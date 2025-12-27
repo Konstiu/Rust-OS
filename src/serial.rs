@@ -4,6 +4,7 @@ use core::fmt::Arguments;
 use uart_16550::SerialPort;
 use spin::Mutex;
 use lazy_static::lazy_static;
+use x86_64::instructions::interrupts::without_interrupts;
 
 
 lazy_static! {
@@ -41,5 +42,7 @@ macro_rules! serial_print {
 
 #[doc(hidden)]
 pub fn _serial_print(args: Arguments) {
-    SERIAL_PORT.lock().write_fmt(args).expect("Failed to print to serial port");
+    without_interrupts(|| {
+     SERIAL_PORT.lock().write_fmt(args).expect("Failed to print to serial port");       
+    })
 }

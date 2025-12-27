@@ -15,7 +15,7 @@ pub mod vga_buffer;
 
 pub fn init_kernel() {
     gdt::initialize_global_descriptor_table();
-    interrupts::load_interrupt_descriptor_table();
+    interrupts::initialize_interrupt_handling();
 }
 
 pub trait Testable {
