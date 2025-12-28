@@ -4,10 +4,12 @@
 #![test_runner(rust_os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 use core::panic::PanicInfo;
-use rust_os::{hlt_loop, init_kernel, println};
-use rust_os::memory;
+use rust_os::{hlt_loop, init_kernel, println, allocator, memory::{self, BootInfoFrameAllocator},};
 use bootloader::{BootInfo, entry_point};
 use x86_64::{structures::paging::{Translate,Page,}, VirtAddr};
+use alloc::{rc::Rc, vec, vec::Vec, boxed::Box};
+
+extern crate alloc;
 
 #[cfg(not(test))]
 use rust_os::print;
@@ -24,7 +26,29 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
     let mut frame_allocator = unsafe {memory::BootInfoFrameAllocator::init(&boot_info.memory_map)};
+
+    allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
     
+    //let x = Box::new(4u64);
+    //println!("heap value at {:p} is {}", x, *x);
+
+    //let y = Box::new(41);
+    //println!("heap value at {:p} is {}", y, *y);
+
+    //let mut vec = Vec::new();
+    //for i in 0..500 {
+    //    vec.push(i);
+    //}
+    //println!("vec at {:p}", vec.as_slice());
+
+    //let y = Box::new(41);
+    //println!("heap value at {:p} is {}", y, *y);
+    //// create a reference counted vector -> will be freed when count reaches 0
+    //let reference_counted = Rc::new(vec![1, 2, 3]);
+    //let cloned_reference = reference_counted.clone();
+    //println!("current reference count is {}", Rc::strong_count(&cloned_reference));
+    //core::mem::drop(reference_counted);
+    //println!("reference count is {} now", Rc::strong_count(&cloned_reference));
 
     #[cfg(test)]
     test_main();

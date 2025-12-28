@@ -6,7 +6,7 @@
 #![reexport_test_harness_main = "test_main"]
 
 use core::panic::PanicInfo;
-//use bootloader::{BootInfo, entry_point};
+use bootloader::{BootInfo, entry_point};
 
 use x86_64::instructions::hlt;
 
@@ -16,6 +16,9 @@ pub mod qemu;
 pub mod serial;
 pub mod vga_buffer;
 pub mod memory;
+pub mod allocator;
+
+extern crate alloc;
 
 pub fn init_kernel() {
     gdt::initialize_global_descriptor_table();
