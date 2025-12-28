@@ -1,5 +1,4 @@
 #![no_std]
-
 #![cfg_attr(test, no_main)]
 #![feature(custom_test_frameworks)]
 #![feature(abi_x86_interrupt)]
@@ -8,8 +7,8 @@
 
 use core::panic::PanicInfo;
 
-use x86_64::instructions::hlt;
 use crate::qemu::{QemuExitCode, exit_qemu};
+use x86_64::instructions::hlt;
 
 pub mod gdt;
 pub mod interrupts;

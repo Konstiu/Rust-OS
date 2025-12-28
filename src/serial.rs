@@ -3,7 +3,6 @@ use spin::Mutex;
 use uart_16550::SerialPort;
 use x86_64::instructions::interrupts::without_interrupts;
 
-
 lazy_static! {
     pub static ref SERIAL0: Mutex<SerialPort> = {
         let mut serial_port = unsafe { SerialPort::new(0x3F8) };

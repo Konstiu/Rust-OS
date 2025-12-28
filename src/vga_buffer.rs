@@ -1,9 +1,9 @@
 use core::fmt;
+use core::fmt::Write;
 use lazy_static::lazy_static;
 use spin::Mutex;
 use volatile::Volatile;
 use x86_64::instructions::interrupts::without_interrupts;
-use core::fmt::Write;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -142,7 +142,7 @@ macro_rules! println {
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
     without_interrupts(|| {
-     WRITER.lock().write_fmt(args).unwrap();       
+        WRITER.lock().write_fmt(args).unwrap();
     })
 }
 
@@ -151,7 +151,7 @@ fn test_println_many() {
     without_interrupts(|| {
         for _ in 0..200 {
             println!("test_println_many output");
-        }       
+        }
     })
 }
 
@@ -164,6 +164,6 @@ fn test_println_output() {
         for (i, c) in s.chars().enumerate() {
             let sc = writer.buffer.chars[BUFFER_HEIGHT - 2][i].read();
             assert_eq!(char::from(sc.ascii_character), c);
-        }       
+        }
     })
 }
