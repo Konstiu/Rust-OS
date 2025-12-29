@@ -6,7 +6,7 @@
 
 extern crate alloc;
 
-use bootloader::{entry_point, BootInfo};
+use bootloader::{BootInfo, entry_point};
 use core::panic::PanicInfo;
 use rust_os::init_kernel;
 
@@ -20,11 +20,8 @@ fn main(boot_info: &'static BootInfo) -> ! {
     init_kernel();
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
-    let mut frame_allocator = unsafe {
-        BootInfoFrameAllocator::init(&boot_info.memory_map)
-    };
-    allocator::init_heap(&mut mapper, &mut frame_allocator)
-        .expect("heap initialization failed");
+    let mut frame_allocator = unsafe { BootInfoFrameAllocator::init(&boot_info.memory_map) };
+    allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
     test_main();
     loop {}
@@ -45,7 +42,6 @@ fn simple_allocation() {
     assert_eq!(*heap_value_2, 13);
 }
 
-
 use alloc::vec::Vec;
 
 #[test_case]
@@ -57,7 +53,6 @@ fn large_vec() {
     }
     assert_eq!(vec.iter().sum::<u64>(), (n - 1) * n / 2);
 }
-
 
 use rust_os::allocator::HEAP_SIZE;
 

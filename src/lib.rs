@@ -5,19 +5,19 @@
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
-use core::panic::PanicInfo;
 use bootloader::{BootInfo, entry_point};
+use core::panic::PanicInfo;
 
 use x86_64::instructions::hlt;
 
+pub mod allocator;
 pub mod gdt;
 pub mod interrupts;
+pub mod memory;
 pub mod qemu;
 pub mod serial;
 pub mod task;
 pub mod vga_buffer;
-pub mod memory;
-pub mod allocator;
 
 extern crate alloc;
 

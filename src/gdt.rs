@@ -1,12 +1,20 @@
 use lazy_static::lazy_static;
-use x86_64::{VirtAddr, instructions::tables::load_tss, registers::segmentation::{CS, Segment}, structures::{gdt::{Descriptor, GlobalDescriptorTable, SegmentSelector}, tss::TaskStateSegment}};
+use x86_64::{
+    VirtAddr,
+    instructions::tables::load_tss,
+    registers::segmentation::{CS, Segment},
+    structures::{
+        gdt::{Descriptor, GlobalDescriptorTable, SegmentSelector},
+        tss::TaskStateSegment,
+    },
+};
 
 pub const DOUBLE_FAULT_IST_INDEX: u16 = 0;
 
 struct GlobalDescriptorContext {
     gdt: GlobalDescriptorTable,
     cs_selector: SegmentSelector,
-    tss_selector: SegmentSelector
+    tss_selector: SegmentSelector,
 }
 
 lazy_static! {
@@ -20,7 +28,7 @@ lazy_static! {
             static mut STACK: [u8; STACK_SIZE] = [0; STACK_SIZE];
 
             let stack_start = VirtAddr::from_ptr(&raw const STACK);
-            
+
             // since stacks grow downward, the address we start writing to is actually stack_start + STACK_SIZE
             stack_start + STACK_SIZE as u64
         };
@@ -37,7 +45,7 @@ lazy_static! {
         GlobalDescriptorContext {
             gdt,
             cs_selector,
-            tss_selector
+            tss_selector,
         }
     };
 }

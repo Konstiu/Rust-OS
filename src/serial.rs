@@ -1,17 +1,14 @@
-use core::fmt::Write;
 use core::fmt::Arguments;
+use core::fmt::Write;
 
-use uart_16550::SerialPort;
-use spin::Mutex;
 use lazy_static::lazy_static;
+use spin::Mutex;
+use uart_16550::SerialPort;
 use x86_64::instructions::interrupts::without_interrupts;
-
 
 lazy_static! {
     static ref SERIAL_PORT: Mutex<SerialPort> = {
-        let mut serial_port = unsafe {
-            SerialPort::new(0x3F8)
-        };
+        let mut serial_port = unsafe { SerialPort::new(0x3F8) };
         serial_port.init();
         Mutex::new(serial_port)
     };
@@ -43,6 +40,9 @@ macro_rules! serial_print {
 #[doc(hidden)]
 pub fn _serial_print(args: Arguments) {
     without_interrupts(|| {
-     SERIAL_PORT.lock().write_fmt(args).expect("Failed to print to serial port");       
+        SERIAL_PORT
+            .lock()
+            .write_fmt(args)
+            .expect("Failed to print to serial port");
     })
 }

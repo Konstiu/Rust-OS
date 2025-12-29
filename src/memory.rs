@@ -1,11 +1,13 @@
-use x86_64::{
-    structures::paging::{PageTable, PageTableFlags, OffsetPageTable, Page, PhysFrame, Mapper, Size4KiB, FrameAllocator},
-    VirtAddr,
-    PhysAddr,
-    structures::paging::page_table::FrameError,
-    registers::control::Cr3,
-};
 use bootloader::bootinfo::{MemoryMap, MemoryRegionType};
+use x86_64::{
+    PhysAddr, VirtAddr,
+    registers::control::Cr3,
+    structures::paging::page_table::FrameError,
+    structures::paging::{
+        FrameAllocator, Mapper, OffsetPageTable, Page, PageTable, PageTableFlags, PhysFrame,
+        Size4KiB,
+    },
+};
 
 pub struct BootInfoFrameAllocator {
     memory_map: &'static MemoryMap,
@@ -23,7 +25,7 @@ impl BootInfoFrameAllocator {
     fn usable_frames(&self) -> impl Iterator<Item = PhysFrame> {
         let regions = self.memory_map.iter();
         let usable_regions = regions.filter(|r| r.region_type == MemoryRegionType::Usable);
-        let addr_ranges = usable_regions .map(|r| r.range.start_addr()..r.range.end_addr());
+        let addr_ranges = usable_regions.map(|r| r.range.start_addr()..r.range.end_addr());
         let frame_addresses = addr_ranges.flat_map(|r| r.step_by(4096));
         frame_addresses.map(|addr| PhysFrame::containing_address(PhysAddr::new(addr)))
     }
@@ -45,7 +47,6 @@ unsafe impl FrameAllocator<Size4KiB> for BootInfoFrameAllocator {
 }
 
 unsafe fn active_level_4_table(physical_memory_offset: VirtAddr) -> &'static mut PageTable {
-
     let (level_4_table_frame, _) = Cr3::read();
 
     let phys = level_4_table_frame.start_address();
