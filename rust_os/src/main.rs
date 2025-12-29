@@ -41,7 +41,8 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
-    print!("{}", _info);
+    use rust_os::serial_print;
+    serial_print!("{}", _info);
     hlt_loop()
 }
 
