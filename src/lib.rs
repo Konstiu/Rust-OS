@@ -5,10 +5,11 @@
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
-use bootloader::{BootInfo, entry_point};
 use core::panic::PanicInfo;
-
 use x86_64::instructions::hlt;
+
+#[cfg(test)]
+use bootloader::{BootInfo, entry_point};
 
 pub mod allocator;
 pub mod gdt;
