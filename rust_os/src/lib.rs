@@ -7,23 +7,23 @@
 
 use core::panic::PanicInfo;
 use x86_64::instructions::hlt;
-
-#[cfg(test)]
-use bootloader_api::{BootInfo, entry_point};
+use bootloader_api::{BootInfo, info::FrameBuffer};
 
 pub mod gdt;
 pub mod interrupts;
 pub mod qemu;
 pub mod serial;
-pub mod vga_buffer;
+pub mod framebuffer;
 pub mod memory;
 pub mod allocator;
 pub mod entry_point;
 
 extern crate alloc;
 
-pub fn init_kernel() {
+pub fn init_kernel(framebuffer: &'static mut FrameBuffer) {
+    
     gdt::initialize_global_descriptor_table();
+    framebuffer::init_framebuffer_writer(framebuffer);
     interrupts::initialize_interrupt_handling();
 }
 
