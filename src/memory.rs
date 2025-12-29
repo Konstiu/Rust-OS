@@ -1,8 +1,7 @@
 use x86_64::{
-    structures::paging::{PageTable, PageTableFlags, OffsetPageTable, Page, PhysFrame, Mapper, Size4KiB, FrameAllocator},
+    structures::paging::{PageTable, OffsetPageTable, PhysFrame, Size4KiB, FrameAllocator},
     VirtAddr,
     PhysAddr,
-    structures::paging::page_table::FrameError,
     registers::control::Cr3,
 };
 use bootloader::bootinfo::{MemoryMap, MemoryRegionType};
