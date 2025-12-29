@@ -1,52 +1,22 @@
-#![no_std] // don't link the Rust standard library
-#![no_main] // disable all Rust-level entry points
-#![feature(custom_test_frameworks)]
-#![test_runner(rust_os::test_runner)]
-#![reexport_test_harness_main = "test_main"]
-use core::panic::PanicInfo;
-use rust_os::{hlt_loop, init_kernel, println, allocator, memory::{self, BootInfoFrameAllocator},};
-use bootloader_api::{BootInfo, entry_point};
-use x86_64::VirtAddr;
+fn main() {
 
-extern crate alloc;
+    let bios_path = env!("BIOS_PATH");
 
-#[cfg(not(test))]
-use rust_os::print;
+    let mut cmd = std::process::Command::new("qemu-system-x86_64");
 
-#[cfg(test)]
-use rust_os::test_panic_handler;
-
-entry_point!(kernel_main);
-fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
-    println!("Hello World{}", "!");
-
-    init_kernel();
-
-    let phys_mem_offset = VirtAddr::new(
-        boot_info.physical_memory_offset.into_option().expect("Could not obtain physical memory offset from bootloader")
+    cmd.args(
+        [
+            "-drive",
+            &format!("format=raw,file={bios_path}"),
+            "-device",
+            "isa-debug-exit,iobase=0xf4,iosize=0x04",
+            "-serial",
+            "stdio",
+            "-display",
+            "none",           
+        ]
     );
-    let mut mapper = unsafe { memory::init(phys_mem_offset) };
-    let mut frame_allocator = unsafe {BootInfoFrameAllocator::init(&boot_info.memory_regions)};
 
-    allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
-
-    #[cfg(test)]
-    test_main();
-
-    hlt_loop()
+    let mut child = cmd.spawn().unwrap();
+    child.wait().unwrap();
 }
-
-/// This function is called on panic.
-#[cfg(not(test))]
-#[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    print!("{}", _info);
-    hlt_loop()
-}
-
-#[cfg(test)]
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    test_panic_handler(info)
-}
-
