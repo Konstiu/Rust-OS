@@ -5,7 +5,12 @@
 use core::panic::PanicInfo;
 use lazy_static::lazy_static;
 
-use rust_os::{gdt::{DOUBLE_FAULT_IST_INDEX, initialize_global_descriptor_table}, hlt_loop, qemu::{QemuExitCode, exit_qemu}, serial_print, serial_println};
+use rust_os::{
+    gdt::{DOUBLE_FAULT_IST_INDEX, initialize_global_descriptor_table},
+    hlt_loop,
+    qemu::{QemuExitCode, exit_qemu},
+    serial_print, serial_println,
+};
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 
 lazy_static! {
@@ -27,7 +32,6 @@ pub extern "C" fn _start() -> ! {
     TEST_INTERRUPT_DESCRIPTOR_TABLE.load();
 
     stack_overflow();
-
 
     // should actually run into a double fault before this
     panic!("Execution continued after stack overflow")
