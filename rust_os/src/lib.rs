@@ -18,6 +18,7 @@ pub mod serial;
 pub mod vga_buffer;
 pub mod memory;
 pub mod allocator;
+pub mod entry_point;
 
 extern crate alloc;
 
@@ -69,10 +70,10 @@ pub fn hlt_loop() -> ! {
 }
 
 #[cfg(test)]
-entry_point!(test_kernel_main);
+default_entry_point!(test_kernel_main);
 
 #[cfg(test)]
-fn test_kernel_main(_boot_info: &'static BootInfo) -> ! {
+fn test_kernel_main(_boot_info: &'static mut BootInfo) -> ! {
     init_kernel();
     test_main();
     hlt_loop()
