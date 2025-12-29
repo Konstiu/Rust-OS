@@ -34,13 +34,16 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
 
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
-    let mut executor = Executor::new();
+    #[cfg(not(test))]
+    {
+        let mut executor = Executor::new();
 
-    // Left as an example of calling an example task
-    //executor.spawn(Task::new(number_task()));
+        // Left as an example of calling an example task
+        //executor.spawn(Task::new(number_task()));
 
-    executor.spawn(Task::new(keyboard::print_keypresses()));
-    executor.run();
+        executor.spawn(Task::new(keyboard::print_keypresses()));
+        executor.run();
+    }
 
     //let x = Box::new(4u64);
     //println!("heap value at {:p} is {}", x, *x);
