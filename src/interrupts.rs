@@ -1,13 +1,22 @@
 use lazy_static::lazy_static;
-use pc_keyboard::{DecodedKey, Keyboard, ScancodeSet1, layouts};
+use pc_keyboard::{Keyboard, ScancodeSet1, layouts};
 use pic8259::ChainedPics;
 use spin::Mutex;
-use x86_64::{
-    instructions::port::Port,
-    structures::idt::{InterruptDescriptorTable, InterruptStackFrame},
-};
+use x86_64::registers::control::Cr2;
+use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
 
-use crate::{gdt, print, println};
+use crate::{gdt, hlt_loop, print, println};
+
+extern "x86-interrupt" fn page_fault_handler(
+    stack_frame: InterruptStackFrame,
+    error_code: PageFaultErrorCode,
+) {
+    println!("EXCEPTION: PAGE FAULT");
+    println!("Accessed Address: {:?}", Cr2::read());
+    println!("Error Code: {:?}", error_code);
+    println!("{:#?}", stack_frame);
+    hlt_loop();
+}
 
 lazy_static! {
     static ref INTERRUPT_DESCRIPTOR_TABLE: InterruptDescriptorTable = {
@@ -25,6 +34,9 @@ lazy_static! {
             .set_handler_fn(timer_interrupt_handler);
         interrupt_descriptor_table[u8::from(InterruptIndex::Keyboard)]
             .set_handler_fn(keyboard_interrupt_handler);
+        interrupt_descriptor_table
+            .page_fault
+            .set_handler_fn(page_fault_handler);
         interrupt_descriptor_table
     };
 }
@@ -49,6 +61,12 @@ static PICS: spin::Mutex<ChainedPics> =
 enum InterruptIndex {
     Timer = PIC_1_OFFSET,
     Keyboard,
+}
+
+impl InterruptIndex {
+    fn as_u8(self) -> u8 {
+        self as u8
+    }
 }
 
 impl From<InterruptIndex> for u8 {
@@ -87,23 +105,16 @@ extern "x86-interrupt" fn timer_interrupt_handler(_: InterruptStackFrame) {
     }
 }
 
-extern "x86-interrupt" fn keyboard_interrupt_handler(_: InterruptStackFrame) {
-    let mut keyboard = KEYBOARD.lock();
-    let mut ps2_port: Port<u8> = Port::new(0x60);
-    let scancode = unsafe { ps2_port.read() };
+extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
+    use x86_64::instructions::port::Port;
 
-    if let Ok(Some(key_event)) = keyboard.add_byte(scancode)
-        && let Some(key) = keyboard.process_keyevent(key_event)
-    {
-        match key {
-            DecodedKey::Unicode(character) => print!("{character}"),
-            DecodedKey::RawKey(raw_key) => print!("{raw_key:?}"),
-        }
-    }
+    let mut port = Port::new(0x60);
+    let scancode: u8 = unsafe { port.read() };
+    crate::task::keyboard::add_scancode(scancode);
 
     unsafe {
         PICS.lock()
-            .notify_end_of_interrupt(u8::from(InterruptIndex::Keyboard));
+            .notify_end_of_interrupt(InterruptIndex::Keyboard.as_u8());
     }
 }
 

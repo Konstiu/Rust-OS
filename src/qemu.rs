@@ -1,3 +1,5 @@
+use x86_64::instructions::port::Port;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum QemuExitCode {
@@ -6,8 +8,6 @@ pub enum QemuExitCode {
 }
 
 pub fn exit_qemu(exit_code: QemuExitCode) {
-    use x86_64::instructions::port::Port;
-
     unsafe {
         // 0xf4 is a generally unused port, but is used by QEMU for the
         // isa-debug-exit device
