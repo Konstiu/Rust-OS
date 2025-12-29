@@ -13,12 +13,12 @@ use bootloader_api::{BootInfo, entry_point};
 
 pub mod allocator;
 pub mod gdt;
+pub mod entry_point;
 pub mod interrupts;
 pub mod memory;
 pub mod qemu;
 pub mod serial;
 pub mod task;
-pub mod vga_buffer;
 
 extern crate alloc;
 
@@ -70,10 +70,10 @@ pub fn hlt_loop() -> ! {
 }
 
 #[cfg(test)]
-entry_point!(test_kernel_main);
+default_entry_point!(test_kernel_main);
 
 #[cfg(test)]
-fn test_kernel_main(_boot_info: &'static BootInfo) -> ! {
+fn test_kernel_main(_boot_info: &'static mut BootInfo) -> ! {
     init_kernel();
     test_main();
     hlt_loop()

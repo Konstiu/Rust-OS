@@ -4,8 +4,8 @@
 #![test_runner(rust_os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 use core::panic::PanicInfo;
-use rust_os::{hlt_loop, init_kernel, println, allocator, memory::{self, BootInfoFrameAllocator},};
-use bootloader_api::{BootInfo, entry_point};
+use rust_os::{allocator, default_entry_point, hlt_loop, init_kernel, memory::{self, BootInfoFrameAllocator}, println};
+use bootloader_api::{BootInfo};
 use x86_64::VirtAddr;
 
 extern crate alloc;
@@ -16,7 +16,7 @@ use rust_os::print;
 #[cfg(test)]
 use rust_os::test_panic_handler;
 
-entry_point!(kernel_main);
+default_entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     println!("Hello World{}", "!");
 
