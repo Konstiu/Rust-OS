@@ -9,7 +9,7 @@ use core::panic::PanicInfo;
 use x86_64::instructions::hlt;
 
 #[cfg(test)]
-use bootloader::{BootInfo, entry_point};
+use bootloader_api::{BootInfo, entry_point};
 
 pub mod gdt;
 pub mod interrupts;

@@ -21,10 +21,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "812e12b5285cc515a9c72a5c1d3b6d46a19dac5acfef5265968c166106e31dd3"
 
 [[package]]
-name = "bootloader"
-version = "0.9.33"
+name = "bootloader_api"
+version = "0.11.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7bdfddac270bbdd45903296bc1caf29a7fdce6b326aaf0bbab7f04c5f98b7447"
+checksum = "9af2881e494cfadbfd715dc4dd0cd8ff1f3bab70bed96385da250b392f4d91fc"
 
 [[package]]
 name = "const_fn"
@@ -87,7 +87,7 @@ dependencies = [
 name = "rust_os"
 version = "0.1.0"
 dependencies = [
- "bootloader",
+ "bootloader_api",
  "lazy_static",
  "linked_list_allocator",
  "pc-keyboard",

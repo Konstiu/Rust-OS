@@ -5,7 +5,7 @@
 #![reexport_test_harness_main = "test_main"]
 use core::panic::PanicInfo;
 use rust_os::{hlt_loop, init_kernel, println, allocator, memory::{self, BootInfoFrameAllocator},};
-use bootloader::{BootInfo, entry_point};
+use bootloader_api::{BootInfo, entry_point};
 use x86_64::VirtAddr;
 
 extern crate alloc;
@@ -17,14 +17,16 @@ use rust_os::print;
 use rust_os::test_panic_handler;
 
 entry_point!(kernel_main);
-fn kernel_main(boot_info: &'static BootInfo) -> ! {
+fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     println!("Hello World{}", "!");
 
     init_kernel();
 
-    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    let phys_mem_offset = VirtAddr::new(
+        boot_info.physical_memory_offset.into_option().expect("Could not obtain physical memory offset from bootloader")
+    );
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
-    let mut frame_allocator = unsafe {BootInfoFrameAllocator::init(&boot_info.memory_map)};
+    let mut frame_allocator = unsafe {BootInfoFrameAllocator::init(&boot_info.memory_regions)};
 
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
