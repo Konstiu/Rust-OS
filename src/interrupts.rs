@@ -1,13 +1,18 @@
 use lazy_static::lazy_static;
-use pc_keyboard::{DecodedKey, Keyboard, ScancodeSet1, layouts};
-use spin::Mutex;
-use x86_64::{instructions::port::Port, structures::idt::{PageFaultErrorCode, InterruptDescriptorTable, InterruptStackFrame}};
+use pc_keyboard::{Keyboard, ScancodeSet1, layouts};
 use pic8259::ChainedPics;
+use spin::Mutex;
 use x86_64::registers::control::Cr2;
+use x86_64::{
+    structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode},
+};
 
-use crate::{gdt, print, println, hlt_loop};
+use crate::{gdt, hlt_loop, print, println};
 
-extern "x86-interrupt" fn page_fault_handler(stack_frame: InterruptStackFrame, error_code: PageFaultErrorCode,) {
+extern "x86-interrupt" fn page_fault_handler(
+    stack_frame: InterruptStackFrame,
+    error_code: PageFaultErrorCode,
+) {
     println!("EXCEPTION: PAGE FAULT");
     println!("Accessed Address: {:?}", Cr2::read());
     println!("Error Code: {:?}", error_code);
@@ -18,21 +23,29 @@ extern "x86-interrupt" fn page_fault_handler(stack_frame: InterruptStackFrame, e
 lazy_static! {
     static ref INTERRUPT_DESCRIPTOR_TABLE: InterruptDescriptorTable = {
         let mut interrupt_descriptor_table = InterruptDescriptorTable::new();
-        interrupt_descriptor_table.breakpoint.set_handler_fn(breakpoint_handler);
+        interrupt_descriptor_table
+            .breakpoint
+            .set_handler_fn(breakpoint_handler);
         unsafe {
-            interrupt_descriptor_table.double_fault.set_handler_fn(double_fault_handler)
-            .set_stack_index(gdt::DOUBLE_FAULT_IST_INDEX);
+            interrupt_descriptor_table
+                .double_fault
+                .set_handler_fn(double_fault_handler)
+                .set_stack_index(gdt::DOUBLE_FAULT_IST_INDEX);
         }
-        interrupt_descriptor_table[u8::from(InterruptIndex::Timer)].set_handler_fn(timer_interrupt_handler);
-        interrupt_descriptor_table[u8::from(InterruptIndex::Keyboard)].set_handler_fn(keyboard_interrupt_handler);
-        interrupt_descriptor_table.page_fault.set_handler_fn(page_fault_handler);
+        interrupt_descriptor_table[u8::from(InterruptIndex::Timer)]
+            .set_handler_fn(timer_interrupt_handler);
+        interrupt_descriptor_table[u8::from(InterruptIndex::Keyboard)]
+            .set_handler_fn(keyboard_interrupt_handler);
+        interrupt_descriptor_table
+            .page_fault
+            .set_handler_fn(page_fault_handler);
         interrupt_descriptor_table
     };
 }
 
 lazy_static! {
-    static ref KEYBOARD: Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>> = Mutex::new(
-        Keyboard::new(
+    static ref KEYBOARD: Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>> =
+        Mutex::new(Keyboard::new(
             ScancodeSet1::new(),
             layouts::Us104Key,
             pc_keyboard::HandleControl::Ignore
@@ -42,15 +55,24 @@ lazy_static! {
 const PIC_1_OFFSET: u8 = 32;
 const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
 
-static PICS: spin::Mutex<ChainedPics> = Mutex::new(unsafe {
-    ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET)
-});
+static PICS: spin::Mutex<ChainedPics> =
+    Mutex::new(unsafe { ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET) });
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
 enum InterruptIndex {
     Timer = PIC_1_OFFSET,
-    Keyboard
+    Keyboard,
+}
+
+impl InterruptIndex {
+    fn as_u8(self) -> u8 {
+        self as u8
+    }
+
+    fn as_usize(self) -> usize {
+        usize::from(self.as_u8())
+    }
 }
 
 impl From<InterruptIndex> for u8 {
@@ -61,7 +83,9 @@ impl From<InterruptIndex> for u8 {
 
 pub fn initialize_interrupt_handling() {
     INTERRUPT_DESCRIPTOR_TABLE.load();
-    unsafe { PICS.lock().initialize(); }
+    unsafe {
+        PICS.lock().initialize();
+    }
     x86_64::instructions::interrupts::enable();
 }
 
@@ -87,22 +111,16 @@ extern "x86-interrupt" fn timer_interrupt_handler(_: InterruptStackFrame) {
     }
 }
 
-extern "x86-interrupt" fn keyboard_interrupt_handler(_: InterruptStackFrame) {
-    let mut keyboard = KEYBOARD.lock();
-    let mut ps2_port: Port<u8> =  Port::new(0x60);
-    let scancode = unsafe { ps2_port.read() };
+extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
+    use x86_64::instructions::port::Port;
 
-    if let Ok(Some(key_event)) = keyboard.add_byte(scancode)
-        && let Some(key) = keyboard.process_keyevent(key_event) {
-            match key {
-                DecodedKey::Unicode(character) => print!("{character}"),
-                DecodedKey::RawKey(raw_key) => print!("{raw_key:?}")
-            }
-        }
-    
+    let mut port = Port::new(0x60);
+    let scancode: u8 = unsafe { port.read() };
+    crate::task::keyboard::add_scancode(scancode);
+
     unsafe {
         PICS.lock()
-            .notify_end_of_interrupt(u8::from(InterruptIndex::Keyboard));
+            .notify_end_of_interrupt(InterruptIndex::Keyboard.as_u8());
     }
 }
 
@@ -111,5 +129,5 @@ mod tests {
     #[test_case]
     fn test_breakpoint_interrupt() {
         x86_64::instructions::interrupts::int3();
-    }   
+    }
 }

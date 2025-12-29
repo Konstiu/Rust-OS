@@ -3,11 +3,15 @@
 #![feature(custom_test_frameworks)]
 #![test_runner(rust_os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
-use core::panic::PanicInfo;
-use rust_os::{hlt_loop, init_kernel, println, allocator, memory::{self, BootInfoFrameAllocator},};
 use bootloader::{BootInfo, entry_point};
-use x86_64::{structures::paging::{Translate,Page,}, VirtAddr};
-use alloc::{rc::Rc, vec, vec::Vec, boxed::Box};
+use core::panic::PanicInfo;
+use rust_os::{
+    allocator, hlt_loop, init_kernel,
+    memory::{self},
+    println,
+    task::{Task, executor::Executor, keyboard},
+};
+use x86_64::VirtAddr;
 
 extern crate alloc;
 
@@ -25,10 +29,19 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
 
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
-    let mut frame_allocator = unsafe {memory::BootInfoFrameAllocator::init(&boot_info.memory_map)};
+    let mut frame_allocator =
+        unsafe { memory::BootInfoFrameAllocator::init(&boot_info.memory_map) };
 
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
-    
+
+    let mut executor = Executor::new();
+
+    // Left as an example of calling an example task
+    //executor.spawn(Task::new(number_task()));
+
+    executor.spawn(Task::new(keyboard::print_keypresses()));
+    executor.run();
+
     //let x = Box::new(4u64);
     //println!("heap value at {:p} is {}", x, *x);
 
@@ -56,6 +69,17 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     hlt_loop()
 }
 
+// This and the function below it are left here as examples of
+// implementing a task to run with the executor.
+/*async fn async_number() -> u32 {
+    42
+}
+
+async fn number_task() {
+    let number = async_number().await;
+    println!("async number: {}", number);
+}*/
+
 /// This function is called on panic.
 #[cfg(not(test))]
 #[panic_handler]
@@ -69,4 +93,3 @@ fn panic(_info: &PanicInfo) -> ! {
 fn panic(info: &PanicInfo) -> ! {
     test_panic_handler(info)
 }
-
