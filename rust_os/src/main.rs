@@ -18,9 +18,10 @@ use rust_os::test_panic_handler;
 
 default_entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
-    println!("Hello World{}", "!");
 
-    init_kernel();
+    init_kernel(boot_info.framebuffer.as_mut().expect("Could not get framebuffer from boot info"));
+    
+    println!("Hello World{}", "!");
 
     let phys_mem_offset = VirtAddr::new(
         boot_info.physical_memory_offset.into_option().expect("Could not obtain physical memory offset from bootloader")

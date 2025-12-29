@@ -7,13 +7,12 @@
 
 use core::panic::PanicInfo;
 use x86_64::instructions::hlt;
-
-#[cfg(test)]
-use bootloader_api::{BootInfo, entry_point};
+use bootloader_api::{BootInfo, info::FrameBuffer};
 
 pub mod allocator;
 pub mod gdt;
 pub mod entry_point;
+pub mod framebuffer;
 pub mod interrupts;
 pub mod memory;
 pub mod qemu;
@@ -22,8 +21,10 @@ pub mod task;
 
 extern crate alloc;
 
-pub fn init_kernel() {
+pub fn init_kernel(framebuffer: &'static mut FrameBuffer) {
+    
     gdt::initialize_global_descriptor_table();
+    framebuffer::init_framebuffer_writer(framebuffer);
     interrupts::initialize_interrupt_handling();
 }
 
