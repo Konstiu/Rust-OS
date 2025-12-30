@@ -25,7 +25,7 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 
     init_kernel(boot_info.framebuffer.as_mut().expect("Could not get framebuffer from boot info"));
     
-    println!("Hello World{}", "!");
+    //println!("Hello World{}", "!");
 
     let phys_mem_offset = VirtAddr::new(
         boot_info.physical_memory_offset.into_option().expect("Could not obtain physical memory offset from bootloader")
@@ -37,9 +37,9 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 
 
 
-    println!("Initializing WASM game...");
+    //println!("Initializing WASM game...");
     wasm_game::init_wasm_game(SNAKE_WASM);
-    println!("WASM game initialized!");
+   // println!("WASM game initialized!");
     wasm_game::render_game();
 
 
