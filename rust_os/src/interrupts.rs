@@ -81,7 +81,7 @@ extern "x86-interrupt" fn double_fault_handler(frame: InterruptStackFrame, _: u6
 }
 
 extern "x86-interrupt" fn timer_interrupt_handler(_: InterruptStackFrame) {
-    //print!(".");
+    print!(".");
     wasm_game::update_game();
     wasm_game::render_game();
 
@@ -99,6 +99,10 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_: InterruptStackFrame) {
     if let Ok(Some(key_event)) = keyboard.add_byte(scancode)
         && let Some(key) = keyboard.process_keyevent(key_event) {
             reset_cursor(); 
+            match key {
+                DecodedKey::Unicode(character) => print!("{character}"),
+                DecodedKey::RawKey(raw_key) => print!("{raw_key:?}")
+            }
             let key_code: u8 = match key {
                 DecodedKey::Unicode(c) => c as u8,
                 DecodedKey::RawKey(code) => code as u8,

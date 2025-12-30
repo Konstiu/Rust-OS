@@ -37,9 +37,9 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 
 
 
-    //println!("Initializing WASM game...");
+   // println!("Initializing WASM game...");
     wasm_game::init_wasm_game(SNAKE_WASM);
-   // println!("WASM game initialized!");
+    //println!("WASM game initialized!");
     wasm_game::render_game();
 
 
