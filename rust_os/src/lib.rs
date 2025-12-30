@@ -17,6 +17,7 @@ pub mod framebuffer;
 pub mod memory;
 pub mod allocator;
 pub mod entry_point;
+pub mod wasm_game;
 
 extern crate alloc;
 

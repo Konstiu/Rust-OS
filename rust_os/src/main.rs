@@ -7,8 +7,12 @@ use core::panic::PanicInfo;
 use rust_os::{allocator, default_entry_point, hlt_loop, init_kernel, memory::{self, BootInfoFrameAllocator}, println};
 use bootloader_api::{BootInfo};
 use x86_64::VirtAddr;
+use rust_os::framebuffer::{framebuffer_size, put_pixel, Rgb, draw_cell, clear_color};
+use rust_os::wasm_game;
 
 extern crate alloc;
+
+static SNAKE_WASM: &[u8] = include_bytes!("wasm/snake.wasm");
 
 #[cfg(not(test))]
 use rust_os::print;
@@ -30,6 +34,16 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     let mut frame_allocator = unsafe {BootInfoFrameAllocator::init(&boot_info.memory_regions)};
 
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
+
+
+
+    println!("Initializing WASM game...");
+    wasm_game::init_wasm_game(SNAKE_WASM);
+    println!("WASM game initialized!");
+    wasm_game::render_game();
+
+
+
 
     #[cfg(test)]
     test_main();
