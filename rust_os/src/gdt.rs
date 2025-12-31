@@ -8,8 +8,6 @@ struct GlobalDescriptorContext {
     kernel_code: SegmentSelector,
     task_state: SegmentSelector,
     kernel_data: SegmentSelector,
-    user_code: SegmentSelector,
-    user_data: SegmentSelector
 }
 
 lazy_static! {
@@ -38,16 +36,12 @@ lazy_static! {
         let kernel_code = gdt.append(Descriptor::kernel_code_segment());
         let task_state = gdt.append(Descriptor::tss_segment(&TASK_STATE_SEGMENT));
         let kernel_data = gdt.append(Descriptor::kernel_data_segment());
-        let user_code = gdt.append(Descriptor::user_code_segment());
-        let user_data = gdt.append(Descriptor::user_data_segment());
         
         GlobalDescriptorContext {
             gdt,
             kernel_code,
             task_state,
             kernel_data,
-            user_code,
-            user_data
         }
     };
 }
