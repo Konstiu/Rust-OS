@@ -8,6 +8,7 @@ use x86_64::registers::control::Cr2;
 use crate::{gdt, print, println, hlt_loop};
 use crate::framebuffer::{framebuffer_size, put_pixel, Rgb, draw_cell, clear_color, reset_cursor};
 use crate::wasm_game;
+use crate::serial_println;
 
 extern "x86-interrupt" fn page_fault_handler(stack_frame: InterruptStackFrame, error_code: PageFaultErrorCode,) {
     println!("EXCEPTION: PAGE FAULT");
@@ -81,7 +82,7 @@ extern "x86-interrupt" fn double_fault_handler(frame: InterruptStackFrame, _: u6
 }
 
 extern "x86-interrupt" fn timer_interrupt_handler(_: InterruptStackFrame) {
-    print!(".");
+    //print!(".");
     wasm_game::update_game();
     wasm_game::render_game();
 
@@ -98,10 +99,15 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_: InterruptStackFrame) {
 
     if let Ok(Some(key_event)) = keyboard.add_byte(scancode)
         && let Some(key) = keyboard.process_keyevent(key_event) {
-            reset_cursor(); 
             match key {
-                DecodedKey::Unicode(character) => print!("{character}"),
-                DecodedKey::RawKey(raw_key) => print!("{raw_key:?}")
+                DecodedKey::Unicode(character) => {
+                    //print!("{character}");
+                    serial_println!("'{}'", character);
+                },
+                DecodedKey::RawKey(raw_key) => {
+                    //print!("{raw_key:?}");
+                    serial_println!("{:?}", raw_key);
+                }
             }
             let key_code: u8 = match key {
                 DecodedKey::Unicode(c) => c as u8,

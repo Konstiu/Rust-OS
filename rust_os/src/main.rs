@@ -13,6 +13,7 @@ use rust_os::wasm_game;
 extern crate alloc;
 
 static SNAKE_WASM: &[u8] = include_bytes!("wasm/snake.wasm");
+static COWSAY_WASM: &[u8] = include_bytes!("wasm/cowsay.wasm");
 
 #[cfg(not(test))]
 use rust_os::print;
@@ -37,11 +38,11 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 
 
 
-   // println!("Initializing WASM game...");
-    wasm_game::init_wasm_game(SNAKE_WASM);
-    //println!("WASM game initialized!");
-    wasm_game::render_game();
+   wasm_game::init_wasm_game(SNAKE_WASM);
+   wasm_game::render_game();
 
+    //wasm_game::init_wasm_game(COWSAY_WASM);
+    //wasm_game::render_game();
 
 
 

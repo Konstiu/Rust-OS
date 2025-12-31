@@ -2,6 +2,8 @@ use wasmi::{Caller, Linker, Store, Engine, Module, Instance, Func};
 use crate::framebuffer::{self, Rgb};
 use spin::Mutex;
 use conquer_once::spin::OnceCell;
+use alloc::vec;
+use crate::println;
 
 static WASM_GAME: OnceCell<Mutex<WasmGame>> = OnceCell::uninit();
 
@@ -203,6 +205,28 @@ fn register_framebuffer_functions<T>(linker: &mut Linker<T>) {
         .func_wrap("env", "reset_cursor", 
             |_caller: Caller<T>| {
                 framebuffer::reset_cursor();
+            })
+        .unwrap();
+
+    // println(ptr: i32, len: i32)
+    linker
+        .func_wrap("env", "println",
+            |mut caller: Caller<T>, ptr: i32, len: i32| {
+                // Get WASM memory
+                let memory = caller.get_export("memory")
+                    .and_then(|e| e.into_memory())
+                    .expect("Failed to get WASM memory");
+                
+                // Read the string bytes from WASM memory
+                let mut buffer = vec![0u8; len as usize];
+                memory.read(&caller, ptr as usize, &mut buffer)
+                    .expect("Failed to read memory");
+                
+                // Convert to string and print using your println! macro
+                if let Ok(s) = core::str::from_utf8(&buffer) {
+                    crate::serial_println!("WASM println: ptr={}, len={}, str='{}'", ptr, len, s);
+                    crate::println!("{}", s);
+                }
             })
         .unwrap();
 }

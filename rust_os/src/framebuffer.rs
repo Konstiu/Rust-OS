@@ -62,20 +62,8 @@ pub fn clear_color(color: Rgb) {
 
 pub fn reset_cursor() {
     with_framebuffer_writer(|writer| {
-        let y = writer.y_pos;
-
-        let line_height = CHAR_RASTER_HEIGHT.val() + LINE_SPACING;
-        let start_x = BORDER_PADDING;
-        let end_x = writer.width();
-
-        for py in y..(y + line_height).min(writer.height()) {
-            for px in start_x..end_x {
-                // black pixel
-                writer.write_pixel(px, py, 0);
-            }
-        }
-
         writer.x_pos = BORDER_PADDING;
+        writer.y_pos = BORDER_PADDING;
     });
 }
 
