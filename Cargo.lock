@@ -312,6 +312,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "qemu_runner"
+version = "0.1.0"
+dependencies = [
+ "bootloader",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -363,6 +370,7 @@ name = "rust_os_loader"
 version = "0.1.0"
 dependencies = [
  "bootloader",
+ "qemu_runner",
  "rust_os",
 ]
 

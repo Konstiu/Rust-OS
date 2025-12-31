@@ -1,20 +1,16 @@
+use std::path::PathBuf;
+
+use qemu_runner::{QemuMode, run_qemu_with_image};
+
 fn main() {
+    let bios_path = PathBuf::from(env!("BIOS_PATH"));
+    let status = match run_qemu_with_image(&bios_path, QemuMode::Run) {
+        Ok(status) => status,
+        Err(err) => {
+            eprintln!("failed to run qemu: {err}");
+            std::process::exit(1);
+        }
+    };
 
-    let bios_path = env!("BIOS_PATH");
-
-    let mut cmd = std::process::Command::new("qemu-system-x86_64");
-
-    cmd.args(
-        [
-            "-drive",
-            &format!("format=raw,file={bios_path}"),
-            "-device",
-            "isa-debug-exit,iobase=0xf4,iosize=0x04",
-            "-serial",
-            "stdio",
-        ]
-    );
-
-    let mut child = cmd.spawn().unwrap();
-    child.wait().unwrap();
+    std::process::exit(status.code().unwrap_or(1));
 }

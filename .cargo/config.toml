@@ -1,2 +1,5 @@
 [unstable]
 bindeps = true
+
+[target.x86_64-unknown-none]
+runner = "cargo run -q -p qemu_runner --"

@@ -6,11 +6,11 @@
 
 extern crate alloc;
 
-use bootloader_api::{entry_point, BootInfo};
+use bootloader_api::BootInfo;
 use core::panic::PanicInfo;
-use rust_os::init_kernel;
+use rust_os::{default_entry_point, init_kernel};
 
-entry_point!(main);
+default_entry_point!(main);
 
 fn main(boot_info: &'static mut BootInfo) -> ! {
     use rust_os::allocator;
