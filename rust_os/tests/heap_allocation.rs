@@ -6,22 +6,27 @@
 
 extern crate alloc;
 
-use bootloader::{BootInfo, entry_point};
+use bootloader_api::{entry_point, BootInfo};
 use core::panic::PanicInfo;
 use rust_os::init_kernel;
 
 entry_point!(main);
 
-fn main(boot_info: &'static BootInfo) -> ! {
+fn main(boot_info: &'static mut BootInfo) -> ! {
     use rust_os::allocator;
     use rust_os::memory::{self, BootInfoFrameAllocator};
     use x86_64::VirtAddr;
 
-    init_kernel();
-    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    init_kernel(boot_info.framebuffer.as_mut().expect("Could not get framebuffer from boot_info"));
+    let phys_mem_offset = VirtAddr::new(
+        boot_info.physical_memory_offset.into_option().expect("Could not obtain physical memory offset from bootloader")
+    );
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
-    let mut frame_allocator = unsafe { BootInfoFrameAllocator::init(&boot_info.memory_map) };
-    allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
+    let mut frame_allocator = unsafe {
+        BootInfoFrameAllocator::init(&boot_info.memory_regions)
+    };
+    allocator::init_heap(&mut mapper, &mut frame_allocator)
+        .expect("heap initialization failed");
 
     test_main();
     loop {}

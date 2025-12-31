@@ -77,8 +77,8 @@ pub fn hlt_loop() -> ! {
 default_entry_point!(test_kernel_main);
 
 #[cfg(test)]
-fn test_kernel_main(_boot_info: &'static mut BootInfo) -> ! {
-    init_kernel();
+fn test_kernel_main(boot_info: &'static mut BootInfo) -> ! {
+    init_kernel(boot_info.framebuffer.as_mut().expect("Could not get framebuffer from boot info"));
     test_main();
     hlt_loop()
 }
