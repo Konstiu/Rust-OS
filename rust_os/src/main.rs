@@ -10,9 +10,6 @@ use x86_64::VirtAddr;
 
 extern crate alloc;
 
-#[cfg(not(test))]
-use rust_os::print;
-
 #[cfg(test)]
 use rust_os::test_panic_handler;
 

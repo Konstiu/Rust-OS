@@ -7,7 +7,10 @@
 
 use core::panic::PanicInfo;
 use x86_64::instructions::hlt;
-use bootloader_api::{BootInfo, info::FrameBuffer};
+use bootloader_api::info::FrameBuffer;
+
+#[cfg(test)]
+use bootloader_api::BootInfo;
 
 pub mod allocator;
 pub mod gdt;
