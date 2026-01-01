@@ -366,15 +366,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust_os_loader"
-version = "0.1.0"
-dependencies = [
- "bootloader",
- "qemu_runner",
- "rust_os",
-]
-
-[[package]]
 name = "rustix"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -21,7 +21,7 @@ pub fn run_qemu_with_kernel(
     run_qemu_with_image(&image_path, mode)
 }
 
-pub fn run_qemu_with_image(
+fn run_qemu_with_image(
     image_path: &Path,
     mode: QemuMode,
 ) -> Result<ExitStatus, Box<dyn Error>> {

@@ -1,17 +1,6 @@
-[package]
-name = "rust_os_loader"
-version = "0.1.0"
-edition = "2024"
-
 [workspace]
 members = ["rust_os", "qemu_runner"]
-
-[build-dependencies]
-rust_os = { path = "rust_os", artifact = "bin", target = "x86_64-unknown-none" }
-bootloader = "0.11.3"
-
-[dependencies]
-qemu_runner = { path = "qemu_runner" }
+resolver = "3"
 
 [profile.dev]
 panic = "abort"
