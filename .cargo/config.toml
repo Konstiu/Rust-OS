@@ -1,10 +1,5 @@
 [unstable]
-build-std-features=["compiler-builtins-mem"]
-build-std=["core", "compiler_builtins", "alloc"]
-panic-abort-tests = true
+bindeps = true
 
-[build]
-target = "x86_64-LL-2025.json"
-
-[target.'cfg(target_os = "none")']
-runner = "bootimage runner"
+[target.x86_64-unknown-none]
+runner = "cargo run -q -p qemu_runner --"

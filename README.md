@@ -1,15 +1,12 @@
-# Rust OS
+# Rust OS Workspace
 
-Current Stand, 
+Current Stand,
 
-`cargo build` build the executable.
-`cargo install bootimage` to install bootimage tool.
-`cargo bootimage` creates a bootable disk image and it tells you where it is.
-```qemu-system-x86_64 -drive format=raw,file=target/x86_64-LL-2025/debug/bootimage-LowLevelProgrammingProject.bin the name of the binary file may be different based on the project name. Ours is calles LowLevelProgrammingProject. so the bin is called bootimage-LowLevelProgrammingProject.bin```
-This can also be executed via `cargo run` because of the target specification in .cargo/config.toml.
+- `make build` builds the `rust_os` kernel 
+- `make run` builds the `rust_os` kernel and boots it in QEMU (via the runner in `.cargo/config.toml`).
+- `make test` runs the kernel tests in QEMU (headless).
 
+Crates,
 
-
-
-
-Based on [Writing an OS in Rust](https://os.phil-opp.com/)
+- `rust_os` contains the no_std kernel, following the flow from [Writing an OS in Rust](https://os.phil-opp.com/).
+- `qemu_runner` is a host-side helper that turns the kernel into a bootable disk image and launches QEMU for `cargo run`/`cargo test`.

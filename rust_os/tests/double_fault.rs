@@ -2,10 +2,12 @@
 #![no_main]
 #![feature(abi_x86_interrupt)]
 
+use bootloader_api::BootInfo;
 use core::panic::PanicInfo;
 use lazy_static::lazy_static;
 
 use rust_os::{
+    default_entry_point,
     gdt::{DOUBLE_FAULT_IST_INDEX, initialize_global_descriptor_table},
     hlt_loop,
     qemu::{QemuExitCode, exit_qemu},
@@ -25,8 +27,9 @@ lazy_static! {
     };
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
+default_entry_point!(main);
+
+fn main(_: &'static mut BootInfo) -> ! {
     serial_print!("double_fault::double_fault...\t");
     initialize_global_descriptor_table();
     TEST_INTERRUPT_DESCRIPTOR_TABLE.load();
