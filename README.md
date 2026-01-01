@@ -2,9 +2,9 @@
 
 Current Stand,
 
+- `make build` builds the `rust_os` kernel 
 - `make run` builds the `rust_os` kernel and boots it in QEMU (via the runner in `.cargo/config.toml`).
 - `make test` runs the kernel tests in QEMU (headless).
-- `cargo build -p rust_os --target x86_64-unknown-none` builds the kernel binary only.
 
 Crates,
 

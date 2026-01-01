@@ -1,6 +1,10 @@
 CARGO ?= cargo
 
-.PHONY: run test
+.PHONY: build run test
+
+build:
+	$(CARGO) build -p rust_os --target x86_64-unknown-none
+
 run:
 	$(CARGO) run -p rust_os --target x86_64-unknown-none
 
