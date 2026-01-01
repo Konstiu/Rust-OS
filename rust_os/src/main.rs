@@ -8,7 +8,6 @@ use core::panic::PanicInfo;
 use rust_os::{
     allocator, default_entry_point, hlt_loop, init_kernel,
     memory::{self, BootInfoFrameAllocator},
-    println,
 };
 use x86_64::VirtAddr;
 use rust_os::framebuffer::{framebuffer_size, put_pixel, Rgb, draw_cell, clear_color};
@@ -49,11 +48,12 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
 
-    wasm_game::init_wasm_game(SNAKE_WASM);
+    //wasm_game::init_wasm_game(SNAKE_WASM);
+    //wasm_game::render_game();
+
+    wasm_game::init_wasm_game(COWSAY_WASM);
     wasm_game::render_game();
 
-    //wasm_game::init_wasm_game(COWSAY_WASM);
-    //wasm_game::render_game();
 
     #[cfg(not(test))]
         {
@@ -62,10 +62,10 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
             executor.run();
         }
 
+
     #[cfg(test)]
     test_main();
 
-    hlt_loop()
 }
 
 /// This function is called on panic.

@@ -132,15 +132,7 @@ pub fn draw_cell(cx: usize, cy: usize, cell_size: usize, color: Rgb) {
 macro_rules! print {
     ($($arg:tt)*) => ($crate::framebuffer::_print(format_args!($($arg)*)));
 }
-fn get_rasterized_char(c: char) -> RasterizedChar {
-    fn _get(c: char) -> Option<RasterizedChar> {
-        get_raster(c, FONT_WEIGHT, CHAR_RASTER_HEIGHT)
-    }
 
-    _get(c).unwrap_or_else(|| {
-        _get(FALLBACK_CHAR).expect("Failed to get rasterized version of backup char")
-    })
-}
 
 #[macro_export]
 macro_rules! println {
@@ -156,6 +148,17 @@ pub fn _print(args: fmt::Arguments) {
             .expect("Writing to framebuffer failed")
     })
 }
+
+fn get_rasterized_char(c: char) -> RasterizedChar {
+    fn _get(c: char) -> Option<RasterizedChar> {
+        get_raster(c, FONT_WEIGHT, CHAR_RASTER_HEIGHT)
+    }
+
+    _get(c).unwrap_or_else(|| {
+        _get(FALLBACK_CHAR).expect("Failed to get rasterized version of backup char")
+    })
+}
+
 
 // ============================================================================
 // FrameBufferWriter Implementation
@@ -248,14 +251,6 @@ impl FrameBufferWriter {
         self.x_pos += rendered_char.width() + LETTER_SPACING;
     }
 
-    fn newline(&mut self) {
-        self.y_pos += CHAR_RASTER_HEIGHT.val() + LINE_SPACING;
-        self.carriage_return()
-    }
-
-    fn carriage_return(&mut self) {
-        self.x_pos = BORDER_PADDING
-    }
 
     // ------------------------------------------------------------------------
     // Low-Level Pixel Operations
@@ -312,11 +307,6 @@ impl FrameBufferWriter {
     // Graphics Operations
     // ------------------------------------------------------------------------
 
-    pub fn clear(&mut self) {
-        self.x_pos = BORDER_PADDING;
-        self.y_pos = BORDER_PADDING;
-        self.framebuffer.fill(0);
-    }
 
     pub fn clear_color(&mut self, c: Rgb) {
         for y in 0..self.info.height {
@@ -357,7 +347,6 @@ impl FrameBufferWriter {
 // Trait Implementations
 // ============================================================================
 
-unsafe impl Send for FrameBufferWriter {}
 unsafe impl Sync for FrameBufferWriter {}
 
 impl fmt::Write for FrameBufferWriter {
@@ -369,45 +358,16 @@ impl fmt::Write for FrameBufferWriter {
     }
 }
 
-#[macro_export]
-macro_rules! print {
-    ($($arg:tt)*) => ($crate::framebuffer::_print(format_args!($($arg)*)));
-}
-
-#[macro_export]
-macro_rules! println {
-    () => ($crate::print!("\n"));
-    ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
-}
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
 
-fn get_rasterized_char(c: char) -> RasterizedChar {
-    fn _get(c: char) -> Option<RasterizedChar> {
-        get_raster(c, FONT_WEIGHT, CHAR_RASTER_HEIGHT)
-    }
-
-    _get(c).unwrap_or_else(|| {
-        _get(FALLBACK_CHAR).expect("Failed to get rasterized version of backup char")
-    })
-}
-#[doc(hidden)]
-pub fn _print(args: fmt::Arguments) {
-    without_interrupts(|| {
-        WRITER
-            .get()
-            .expect("FrameBufferWriter has not been initialized")
-            .lock()
-            .write_fmt(args)
-            .expect("Writing to framebuffer failed")
-    })
-}
 #[test_case]
 fn test_println_many() {
     without_interrupts(|| {
         for _ in 0..200 {
             println!("test_println_many output");
         }
+    })
 }

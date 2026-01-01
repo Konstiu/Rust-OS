@@ -4,6 +4,13 @@ resolver = "3"
 
 [profile.dev]
 panic = "abort"
+debug = 1              # keep some symbols, not huge
+strip = "symbols"      # removes most symbol bloat
+opt-level = 1
 
 [profile.release]
 panic = "abort"
+debug = 0              # optional; can be 0
+strip = "symbols"
+lto = true
+codegen-units = 1

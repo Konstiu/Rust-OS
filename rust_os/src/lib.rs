@@ -21,6 +21,7 @@ pub mod memory;
 pub mod qemu;
 pub mod serial;
 pub mod task;
+pub mod wasm_game;
 
 extern crate alloc;
 

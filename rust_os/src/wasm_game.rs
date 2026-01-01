@@ -3,7 +3,6 @@ use crate::framebuffer::{self, Rgb};
 use spin::Mutex;
 use conquer_once::spin::OnceCell;
 use alloc::vec;
-use crate::println;
 
 static WASM_GAME: OnceCell<Mutex<WasmGame>> = OnceCell::uninit();
 

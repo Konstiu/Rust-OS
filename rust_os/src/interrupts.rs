@@ -1,16 +1,14 @@
 use lazy_static::lazy_static;
-use pc_keyboard::{Keyboard, ScancodeSet1, layouts};
+use pc_keyboard::{Keyboard, ScancodeSet1, layouts, DecodedKey};
 use pic8259::ChainedPics;
 use spin::Mutex;
 use x86_64::registers::control::Cr2;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
 
-use crate::{gdt, hlt_loop, print, println};
-use crate::{gdt, print, println, hlt_loop};
-use crate::framebuffer::{framebuffer_size, put_pixel, Rgb, draw_cell, clear_color, reset_cursor};
+use crate::{gdt, hlt_loop, println};
 use crate::wasm_game;
 use crate::serial_println;
-
+use x86_64::instructions::port::Port;
 
 extern "x86-interrupt" fn page_fault_handler(
     stack_frame: InterruptStackFrame,
