@@ -66,6 +66,7 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     #[cfg(test)]
     test_main();
 
+    hlt_loop()
 }
 
 /// This function is called on panic.
