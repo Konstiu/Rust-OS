@@ -4,7 +4,15 @@
 #![test_runner(rust_os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 use core::panic::PanicInfo;
-use rust_os::{allocator, default_entry_point, hlt_loop, init_kernel, memory::{self, BootInfoFrameAllocator}, println};
+use rust_os::{
+    allocator,
+    default_entry_point,
+    hlt_loop,
+    init_kernel,
+    memory::{self, BootInfoFrameAllocator},
+    println,
+    task::{executor::Executor, keyboard, Task},
+};
 use bootloader_api::{BootInfo};
 use x86_64::VirtAddr;
 
@@ -28,6 +36,13 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
+    #[cfg(not(test))]
+    {
+        let mut executor = Executor::new();
+        executor.spawn(Task::new(keyboard::print_keypresses()));
+        executor.run();
+    }
+
     #[cfg(test)]
     test_main();
 
@@ -48,4 +63,3 @@ fn panic(_info: &PanicInfo) -> ! {
 fn panic(info: &PanicInfo) -> ! {
     test_panic_handler(info)
 }
-
