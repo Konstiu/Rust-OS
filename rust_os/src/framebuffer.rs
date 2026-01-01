@@ -1,9 +1,14 @@
-use core::{fmt::{self, Write}, ptr};
+use core::{
+    fmt::{self, Write},
+    ptr,
+};
 
 use bootloader_api::info::{FrameBuffer, FrameBufferInfo, PixelFormat};
-use noto_sans_mono_bitmap::{FontWeight, RasterHeight, RasterizedChar, get_raster, get_raster_width};
-use spin::Mutex;
 use conquer_once::spin::OnceCell;
+use noto_sans_mono_bitmap::{
+    FontWeight, RasterHeight, RasterizedChar, get_raster, get_raster_width,
+};
+use spin::Mutex;
 use x86_64::instructions::interrupts::without_interrupts;
 
 // ============================================================================
@@ -127,6 +132,15 @@ pub fn draw_cell(cx: usize, cy: usize, cell_size: usize, color: Rgb) {
 macro_rules! print {
     ($($arg:tt)*) => ($crate::framebuffer::_print(format_args!($($arg)*)));
 }
+fn get_rasterized_char(c: char) -> RasterizedChar {
+    fn _get(c: char) -> Option<RasterizedChar> {
+        get_raster(c, FONT_WEIGHT, CHAR_RASTER_HEIGHT)
+    }
+
+    _get(c).unwrap_or_else(|| {
+        _get(FALLBACK_CHAR).expect("Failed to get rasterized version of backup char")
+    })
+}
 
 #[macro_export]
 macro_rules! println {
@@ -166,15 +180,29 @@ impl FrameBufferWriter {
         writer
     }
 
+    fn newline(&mut self) {
+        self.y_pos += CHAR_RASTER_HEIGHT.val() + LINE_SPACING;
+        self.carriage_return()
+    }
+
+    fn carriage_return(&mut self) {
+        self.x_pos = BORDER_PADDING
+    }
     // ------------------------------------------------------------------------
     // Dimension Queries
     // ------------------------------------------------------------------------
 
-    pub fn width(&self) -> usize {
+    pub fn clear(&mut self) {
+        self.x_pos = BORDER_PADDING;
+        self.y_pos = BORDER_PADDING;
+        self.framebuffer.fill(0);
+    }
+
+    fn width(&self) -> usize {
         self.info.width
     }
 
-    pub fn height(&self) -> usize {
+    fn height(&self) -> usize {
         self.info.height
     }
 
@@ -196,7 +224,7 @@ impl FrameBufferWriter {
             '\r' => self.carriage_return(),
             c => {
                 let new_xpos = self.x_pos + CHAR_RASTER_WIDTH;
-                
+
                 if new_xpos >= self.width() {
                     self.newline();
                 }
@@ -244,12 +272,12 @@ impl FrameBufferWriter {
                 panic!("pixel format {other:?} not supported in FrameBufferWriter")
             }
         };
-        
+
         let bytes_per_pixel = self.info.bytes_per_pixel;
         let byte_offset = pixel_offset * bytes_per_pixel;
         self.framebuffer[byte_offset..(byte_offset + bytes_per_pixel)]
             .copy_from_slice(&color[..bytes_per_pixel]);
-        
+
         let _ = unsafe { ptr::read_volatile(&self.framebuffer[byte_offset]) };
     }
 
@@ -257,10 +285,10 @@ impl FrameBufferWriter {
         if x >= self.info.width || y >= self.info.height {
             return;
         }
-        
+
         let pixel_offset = y * self.info.stride + x;
         let byte_offset = pixel_offset * self.info.bytes_per_pixel;
-        
+
         let color = match self.info.pixel_format {
             PixelFormat::Rgb => [c.r, c.g, c.b, 0],
             PixelFormat::Bgr => [c.b, c.g, c.r, 0],
@@ -270,11 +298,11 @@ impl FrameBufferWriter {
             }
             other => panic!("pixel format {other:?} not supported"),
         };
-        
+
         let bytes_per_pixel = self.info.bytes_per_pixel;
         self.framebuffer[byte_offset..(byte_offset + bytes_per_pixel)]
             .copy_from_slice(&color[..bytes_per_pixel]);
-        
+
         unsafe {
             core::ptr::read_volatile(&self.framebuffer[byte_offset]);
         }
@@ -303,7 +331,7 @@ impl FrameBufferWriter {
     pub fn fill_rect(&mut self, x: usize, y: usize, w: usize, h: usize, c: Rgb) {
         let x_end = (x + w).min(self.info.width);
         let y_end = (y + h).min(self.info.height);
-        
+
         for yy in y..y_end {
             for xx in x..x_end {
                 self.put_pixel_rgb(xx, yy, c);
@@ -341,6 +369,17 @@ impl fmt::Write for FrameBufferWriter {
     }
 }
 
+#[macro_export]
+macro_rules! print {
+    ($($arg:tt)*) => ($crate::framebuffer::_print(format_args!($($arg)*)));
+}
+
+#[macro_export]
+macro_rules! println {
+    () => ($crate::print!("\n"));
+    ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -353,4 +392,22 @@ fn get_rasterized_char(c: char) -> RasterizedChar {
     _get(c).unwrap_or_else(|| {
         _get(FALLBACK_CHAR).expect("Failed to get rasterized version of backup char")
     })
+}
+#[doc(hidden)]
+pub fn _print(args: fmt::Arguments) {
+    without_interrupts(|| {
+        WRITER
+            .get()
+            .expect("FrameBufferWriter has not been initialized")
+            .lock()
+            .write_fmt(args)
+            .expect("Writing to framebuffer failed")
+    })
+}
+#[test_case]
+fn test_println_many() {
+    without_interrupts(|| {
+        for _ in 0..200 {
+            println!("test_println_many output");
+        }
 }

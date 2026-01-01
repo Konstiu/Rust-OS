@@ -1,28 +1,30 @@
 #![no_std]
-#![no_main]
+#![cfg_attr(test, no_main)]
 #![feature(custom_test_frameworks)]
 #![feature(abi_x86_interrupt)]
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
+use bootloader_api::info::FrameBuffer;
 use core::panic::PanicInfo;
 use x86_64::instructions::hlt;
-use bootloader_api::{BootInfo, info::FrameBuffer};
 
-pub mod gdt;
-pub mod interrupts;
-pub mod qemu;
-pub mod serial;
-pub mod framebuffer;
-pub mod memory;
+#[cfg(test)]
+use bootloader_api::BootInfo;
+
 pub mod allocator;
 pub mod entry_point;
-pub mod wasm_game;
+pub mod framebuffer;
+pub mod gdt;
+pub mod interrupts;
+pub mod memory;
+pub mod qemu;
+pub mod serial;
+pub mod task;
 
 extern crate alloc;
 
 pub fn init_kernel(framebuffer: &'static mut FrameBuffer) {
-    
     gdt::initialize_global_descriptor_table();
     framebuffer::init_framebuffer_writer(framebuffer);
     interrupts::initialize_interrupt_handling();
@@ -74,8 +76,13 @@ pub fn hlt_loop() -> ! {
 default_entry_point!(test_kernel_main);
 
 #[cfg(test)]
-fn test_kernel_main(_boot_info: &'static mut BootInfo) -> ! {
-    init_kernel();
+fn test_kernel_main(boot_info: &'static mut BootInfo) -> ! {
+    init_kernel(
+        boot_info
+            .framebuffer
+            .as_mut()
+            .expect("Could not get framebuffer from boot info"),
+    );
     test_main();
     hlt_loop()
 }

@@ -6,21 +6,28 @@
 
 use core::panic::PanicInfo;
 
-use rust_os::{hlt_loop, println};
+use bootloader_api::BootInfo;
+use rust_os::{default_entry_point, hlt_loop, init_kernel, println};
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
+default_entry_point!(main);
+
+fn main(boot_info: &'static mut BootInfo) -> ! {
+    init_kernel(
+        boot_info
+            .framebuffer
+            .as_mut()
+            .expect("Could not get framebuffer from boot info"),
+    );
     test_main();
     hlt_loop()
 }
 
 #[panic_handler]
 fn test_panic_handler(_info: &PanicInfo) -> ! {
-    rust_os::test_panic_handler(_info) 
+    rust_os::test_panic_handler(_info)
 }
 
 #[test_case]
 fn trivial_integration_test() {
-   println!("Tests _start entry point and simple print statement") 
+    println!("Tests _start entry point and simple print statement")
 }
-

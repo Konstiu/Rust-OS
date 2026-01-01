@@ -4,12 +4,14 @@ use x86_64::instructions::port::Port;
 #[repr(u32)]
 pub enum QemuExitCode {
     Success = 0x10,
-    Failed = 0x11
+    Failed = 0x11,
 }
 
 pub fn exit_qemu(exit_code: QemuExitCode) {
     unsafe {
+        // 0xf4 is a generally unused port, but is used by QEMU for the
+        // isa-debug-exit device
         let mut port = Port::new(0xf4);
         port.write(exit_code as u32);
-    } 
+    }
 }
