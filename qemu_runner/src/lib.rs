@@ -21,22 +21,22 @@ pub fn run_qemu_with_kernel(
     run_qemu_with_image(&image_path, mode)
 }
 
-fn run_qemu_with_image(
-    image_path: &Path,
-    mode: QemuMode,
-) -> Result<ExitStatus, Box<dyn Error>> {
+fn run_qemu_with_image(image_path: &Path, mode: QemuMode) -> Result<ExitStatus, Box<dyn Error>> {
     let mut cmd = Command::new("qemu-system-x86_64");
     cmd.args([
-        "-drive", &format!("format=raw,file={}", image_path.display()),
-        "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04",
-        "-serial", "stdio",
+        "-drive",
+        &format!("format=raw,file={}", image_path.display()),
+        "-device",
+        "isa-debug-exit,iobase=0xf4,iosize=0x04",
+        "-serial",
+        "stdio",
     ]);
     if mode == QemuMode::Test {
         cmd.arg("-display").arg("none");
     }
 
     let mut child = cmd.spawn()?;
-    
+
     match mode {
         QemuMode::Test => wait_with_timeout(&mut child, Duration::from_secs(300)),
         QemuMode::Run => Ok(child.wait()?),
@@ -63,7 +63,6 @@ fn wait_with_timeout(
 
         let now = Instant::now();
         if now >= deadline {
-
             if let Err(e) = child.kill() {
                 eprintln!("Failed to kill process after timeout: {e}");
             }

@@ -1,10 +1,9 @@
-use x86_64::{
-    structures::paging::{PageTable, OffsetPageTable, PhysFrame, Size4KiB, FrameAllocator},
-    VirtAddr,
-    PhysAddr,
-    registers::control::Cr3,
-};
 use bootloader_api::info::{MemoryRegionKind, MemoryRegions};
+use x86_64::{
+    PhysAddr, VirtAddr,
+    registers::control::Cr3,
+    structures::paging::{FrameAllocator, OffsetPageTable, PageTable, PhysFrame, Size4KiB},
+};
 
 pub struct BootInfoFrameAllocator {
     memory_regions: &'static MemoryRegions,

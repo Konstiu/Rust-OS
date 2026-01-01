@@ -1,5 +1,13 @@
 use lazy_static::lazy_static;
-use x86_64::{VirtAddr, instructions::tables::load_tss, registers::segmentation::{CS, DS, ES, SS, Segment}, structures::{gdt::{Descriptor, GlobalDescriptorTable, SegmentSelector}, tss::TaskStateSegment}};
+use x86_64::{
+    VirtAddr,
+    instructions::tables::load_tss,
+    registers::segmentation::{CS, DS, ES, SS, Segment},
+    structures::{
+        gdt::{Descriptor, GlobalDescriptorTable, SegmentSelector},
+        tss::TaskStateSegment,
+    },
+};
 
 pub const DOUBLE_FAULT_IST_INDEX: u16 = 0;
 
@@ -36,7 +44,7 @@ lazy_static! {
         let kernel_code = gdt.append(Descriptor::kernel_code_segment());
         let task_state = gdt.append(Descriptor::tss_segment(&TASK_STATE_SEGMENT));
         let kernel_data = gdt.append(Descriptor::kernel_data_segment());
-        
+
         GlobalDescriptorContext {
             gdt,
             kernel_code,

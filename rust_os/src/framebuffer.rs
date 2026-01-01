@@ -1,16 +1,21 @@
-use core::{fmt::{self, Write}, ptr};
+use core::{
+    fmt::{self, Write},
+    ptr,
+};
 
 use bootloader_api::info::{FrameBuffer, FrameBufferInfo, PixelFormat};
-use noto_sans_mono_bitmap::{FontWeight, RasterHeight, RasterizedChar, get_raster, get_raster_width};
-use spin::Mutex;
 use conquer_once::spin::OnceCell;
+use noto_sans_mono_bitmap::{
+    FontWeight, RasterHeight, RasterizedChar, get_raster, get_raster_width,
+};
+use spin::Mutex;
 use x86_64::instructions::interrupts::without_interrupts;
 
 const LINE_SPACING: usize = 2;
 const LETTER_SPACING: usize = 0;
 const BORDER_PADDING: usize = 1;
 const CHAR_RASTER_HEIGHT: RasterHeight = RasterHeight::Size16;
-const CHAR_RASTER_WIDTH: usize =  get_raster_width(FontWeight::Regular, CHAR_RASTER_HEIGHT);
+const CHAR_RASTER_WIDTH: usize = get_raster_width(FontWeight::Regular, CHAR_RASTER_HEIGHT);
 const FALLBACK_CHAR: char = '�';
 const FONT_WEIGHT: FontWeight = FontWeight::Regular;
 
@@ -19,26 +24,24 @@ static WRITER: OnceCell<Mutex<FrameBufferWriter>> = OnceCell::uninit();
 pub fn init_framebuffer_writer(framebuffer: &'static mut FrameBuffer) {
     let info = framebuffer.info();
     let buffer = framebuffer.buffer_mut();
-    WRITER.init_once(|| {
-        Mutex::new(FrameBufferWriter::new(buffer, info))
-    });
+    WRITER.init_once(|| Mutex::new(FrameBufferWriter::new(buffer, info)));
 }
 
-
 fn get_rasterized_char(c: char) -> RasterizedChar {
-    
     fn _get(c: char) -> Option<RasterizedChar> {
         get_raster(c, FONT_WEIGHT, CHAR_RASTER_HEIGHT)
     }
 
-    _get(c).unwrap_or_else(|| _get(FALLBACK_CHAR).expect("Failed to get rasterized version of backup char"))
-} 
+    _get(c).unwrap_or_else(|| {
+        _get(FALLBACK_CHAR).expect("Failed to get rasterized version of backup char")
+    })
+}
 
 struct FrameBufferWriter {
     framebuffer: &'static mut [u8],
     info: FrameBufferInfo,
     x_pos: usize,
-    y_pos: usize
+    y_pos: usize,
 }
 
 impl FrameBufferWriter {
@@ -47,7 +50,7 @@ impl FrameBufferWriter {
             framebuffer,
             info,
             x_pos: 0,
-            y_pos: 0
+            y_pos: 0,
         };
         writer.clear();
         writer
@@ -82,7 +85,7 @@ impl FrameBufferWriter {
             '\r' => self.carriage_return(),
             c => {
                 let new_xpos = self.x_pos + CHAR_RASTER_WIDTH;
-                
+
                 if new_xpos >= self.width() {
                     self.newline();
                 }
@@ -121,14 +124,12 @@ impl FrameBufferWriter {
         let byte_offset = pixel_offset * bytes_per_pixel;
         self.framebuffer[byte_offset..(byte_offset + bytes_per_pixel)]
             .copy_from_slice(&color[..bytes_per_pixel]);
-        let _ = unsafe {
-            ptr::read_volatile(&self.framebuffer[byte_offset])
-        };
+        let _ = unsafe { ptr::read_volatile(&self.framebuffer[byte_offset]) };
     }
 }
 
-unsafe impl Send for FrameBufferWriter{}
-unsafe impl Sync for FrameBufferWriter{}
+unsafe impl Send for FrameBufferWriter {}
+unsafe impl Sync for FrameBufferWriter {}
 
 impl fmt::Write for FrameBufferWriter {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
@@ -138,7 +139,6 @@ impl fmt::Write for FrameBufferWriter {
         Ok(())
     }
 }
-
 
 #[macro_export]
 macro_rules! print {

@@ -12,7 +12,12 @@ use rust_os::{default_entry_point, hlt_loop, init_kernel, println};
 default_entry_point!(main);
 
 fn main(boot_info: &'static mut BootInfo) -> ! {
-    init_kernel(boot_info.framebuffer.as_mut().expect("Could not get framebuffer from boot info"));
+    init_kernel(
+        boot_info
+            .framebuffer
+            .as_mut()
+            .expect("Could not get framebuffer from boot info"),
+    );
     test_main();
     hlt_loop()
 }

@@ -1,9 +1,13 @@
 #![no_std]
 #![no_main]
 
-use core::panic::PanicInfo;
 use bootloader_api::BootInfo;
-use rust_os::{default_entry_point, qemu::{QemuExitCode, exit_qemu}, serial_print, serial_println};
+use core::panic::PanicInfo;
+use rust_os::{
+    default_entry_point,
+    qemu::{QemuExitCode, exit_qemu},
+    serial_print, serial_println,
+};
 
 default_entry_point!(main);
 
