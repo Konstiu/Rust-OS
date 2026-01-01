@@ -11,12 +11,14 @@ use rust_os::{
     init_kernel,
     memory::{self, BootInfoFrameAllocator},
     println,
-    task::{executor::Executor, keyboard, Task},
 };
 use bootloader_api::{BootInfo};
 use x86_64::VirtAddr;
 
 extern crate alloc;
+
+#[cfg(not(test))]
+use rust_os::task::{executor::Executor, keyboard, Task};
 
 #[cfg(test)]
 use rust_os::test_panic_handler;
