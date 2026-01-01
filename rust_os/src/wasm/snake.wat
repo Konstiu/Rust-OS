@@ -524,6 +524,9 @@
       (i32.div_u (global.get $grid_width) (i32.const 2)))
     (global.set $snake_head_y 
       (i32.div_u (global.get $grid_height) (i32.const 2)))
+	(call $set_segment (i32.const 0) (global.get $snake_head_x) (global.get $snake_head_y))
+	(call $set_segment (i32.const 1) (global.get $snake_head_x) (global.get $snake_head_y))
+	(call $set_segment (i32.const 2) (global.get $snake_head_x) (global.get $snake_head_y))
   )
 
   ;; Update game state (call this every frame)

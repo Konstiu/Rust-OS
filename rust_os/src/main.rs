@@ -12,7 +12,9 @@ use rust_os::wasm_game;
 
 extern crate alloc;
 
+#[allow(dead_code)]
 static SNAKE_WASM: &[u8] = include_bytes!("wasm/snake.wasm");
+#[allow(dead_code)]
 static COWSAY_WASM: &[u8] = include_bytes!("wasm/cowsay.wasm");
 
 #[cfg(not(test))]
@@ -38,8 +40,8 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 
 
 
-   wasm_game::init_wasm_game(SNAKE_WASM);
-   wasm_game::render_game();
+    wasm_game::init_wasm_game(SNAKE_WASM);
+    wasm_game::render_game();
 
     //wasm_game::init_wasm_game(COWSAY_WASM);
     //wasm_game::render_game();
