@@ -162,3 +162,12 @@ pub fn _print(args: fmt::Arguments) {
             .expect("Writing to framebuffer failed")
     })
 }
+
+#[test_case]
+fn test_println_many() {
+    without_interrupts(|| {
+        for _ in 0..200 {
+            println!("test_println_many output");
+        }
+    })
+}
