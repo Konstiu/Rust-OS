@@ -47,9 +47,21 @@ pub async fn run() {
 
 fn execute_command(command: &str) {
     match command.trim() {
-        "help" => println!("Available commands: help, echo, version, clear"),
+        "help" => println!("Available commands: help, echo, version, clear, snake, cowsay"),
         "version" => println!("RustOS v0.1.0"),
-        "clear" => print!("\x1b[2J"), // Only works if ANSI escape codes are supported, otherwise just adds lines
+        // FIXME: implement rendering for this
+        //"clear" => print!("\x1b[2J"),
+        // FIXME: allocation does not work?
+        "snake" => {
+            println!("Starting Snake...");
+            let wasm_bytes = include_bytes!("../wasm/snake.wasm");
+            crate::wasm_game::init_wasm_game(wasm_bytes);
+        }
+        "cowsay" => {
+            println!("Starting Cowsay...");
+            let wasm_bytes = include_bytes!("../wasm/cowsay.wasm");
+            crate::wasm_game::init_wasm_game(wasm_bytes);
+        }
         s if s.starts_with("echo ") => println!("{}", &s[5..]),
         "" => {}
         cmd => println!(

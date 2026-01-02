@@ -6,6 +6,7 @@ use x86_64::registers::control::Cr2;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
 
 use crate::serial_println;
+use crate::task::keyboard::add_scancode;
 use crate::wasm_game;
 use crate::{gdt, hlt_loop, print, println};
 use x86_64::instructions::port::Port;
@@ -109,16 +110,16 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
     let mut ps2_port: Port<u8> = Port::new(0x60);
     let scancode = unsafe { ps2_port.read() };
 
+    add_scancode(scancode);
+
     if let Ok(Some(key_event)) = keyboard.add_byte(scancode)
         && let Some(key) = keyboard.process_keyevent(key_event)
     {
         match key {
             DecodedKey::Unicode(character) => {
-                print!("{character}");
                 serial_println!("'{}'", character);
             }
             DecodedKey::RawKey(raw_key) => {
-                print!("{raw_key:?}");
                 serial_println!("{:?}", raw_key);
             }
         }
@@ -129,7 +130,6 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
         wasm_game::handle_key(key_code);
         wasm_game::update_game(); // Add this
         wasm_game::render_game();
-        //wasm_game::handle_key(key_code);
     }
 
     unsafe {
