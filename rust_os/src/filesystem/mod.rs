@@ -10,6 +10,7 @@ pub struct FileSystem {
     inner: TarFS
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FileType {
     File,
     HardLink,
