@@ -14,6 +14,7 @@ use bootloader_api::BootInfo;
 
 pub mod allocator;
 pub mod entry_point;
+pub mod filesystem;
 pub mod framebuffer;
 pub mod gdt;
 pub mod interrupts;

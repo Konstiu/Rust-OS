@@ -1,23 +1,29 @@
 use std::{
-    env,
     path::{Path, PathBuf},
     process::ExitStatus,
 };
 
+use clap::Parser;
 use qemu_runner::{QemuMode, run_qemu_with_kernel};
 
 // QEMU with isa-debug-exit returns (port << 1) | 1.
 const SUCCESS_EXIT_CODE: i32 = 33;
 
-fn main() {
-    let kernel_path = match env::args_os().nth(1) {
-        Some(path) => PathBuf::from(path),
-        None => {
-            eprintln!("usage: qemu_runner <kernel>");
-            std::process::exit(1);
-        }
-    };
 
+#[derive(Parser, Debug)]
+struct Args {
+    #[arg(long)]
+    ramdisk: Option<PathBuf>,
+
+    #[arg(value_name = "KERNEL")]
+    kernel: PathBuf
+}
+
+fn main() {
+    let args = Args::parse();
+    
+    let kernel_path = args.kernel;
+    let ramdisk_path = args.ramdisk;
     let is_test = is_test_binary(&kernel_path);
 
     let mode = if is_test {
@@ -26,7 +32,7 @@ fn main() {
         QemuMode::Run
     };
 
-    let status = match run_qemu_with_kernel(&kernel_path, mode) {
+    let status = match run_qemu_with_kernel(kernel_path, ramdisk_path, mode) {
         Ok(status) => status,
         Err(err) => {
             eprintln!("failed to run qemu: {err}");

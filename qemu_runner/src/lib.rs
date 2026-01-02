@@ -7,17 +7,27 @@ use std::{
     time::{Duration, Instant},
 };
 
+use bootloader::DiskImageBuilder;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum QemuMode {
     Run,
     Test,
 }
 
-pub fn run_qemu_with_kernel(
-    kernel_path: &Path,
+pub fn run_qemu_with_kernel<P, R>(
+    kernel_path: P,
+    ramdisk_path: Option<R>,
     mode: QemuMode,
-) -> Result<ExitStatus, Box<dyn Error>> {
-    let image_path = create_bios_disk_image(kernel_path)?;
+) -> Result<ExitStatus, Box<dyn Error>>
+where
+    P: AsRef<Path>,
+    R: AsRef<Path>
+ {
+     let image_path = create_bios_disk_image(
+         kernel_path.as_ref(),
+         ramdisk_path.as_ref().map(|p| p.as_ref())
+    )?;
     run_qemu_with_image(&image_path, mode)
 }
 
@@ -43,10 +53,21 @@ fn run_qemu_with_image(image_path: &Path, mode: QemuMode) -> Result<ExitStatus, 
     }
 }
 
-fn create_bios_disk_image(kernel_path: &Path) -> Result<PathBuf, Box<dyn Error>> {
+fn create_bios_disk_image(
+    kernel_path: &Path,
+    ramdisk_path: Option<&Path>
+) -> Result<PathBuf, Box<dyn Error>>
+{
+    let mut disk_image_builder = DiskImageBuilder::new(kernel_path.to_path_buf());
+
+    if let Some(ramdisk) = ramdisk_path  {
+        disk_image_builder.set_ramdisk(ramdisk.to_path_buf()); 
+    }
+
     let mut image_path = kernel_path.to_path_buf();
     image_path.set_extension("img");
-    bootloader::BiosBoot::new(kernel_path).create_disk_image(&image_path)?;
+
+    disk_image_builder.create_bios_image(&image_path)?;
     Ok(image_path)
 }
 
