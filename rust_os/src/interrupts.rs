@@ -66,11 +66,6 @@ enum InterruptIndex {
     Keyboard,
 }
 
-impl InterruptIndex {
-    fn as_u8(self) -> u8 {
-        self as u8
-    }
-}
 
 impl From<InterruptIndex> for u8 {
     fn from(value: InterruptIndex) -> Self {

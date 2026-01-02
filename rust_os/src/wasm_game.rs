@@ -1,4 +1,4 @@
-use wasmi::{Caller, Linker, Store, Engine, Module, Instance, Func};
+use wasmi::{Caller, Linker, Store, Engine, Module, Func};
 use crate::framebuffer::{self, Rgb};
 use spin::Mutex;
 use conquer_once::spin::OnceCell;
@@ -8,7 +8,6 @@ static WASM_GAME: OnceCell<Mutex<WasmGame>> = OnceCell::uninit();
 
 pub struct WasmGame {
     store: Store<()>,
-    instance: Instance,
     game_update: Func,
     game_render: Func,
     set_direction: Func,
@@ -61,7 +60,6 @@ pub fn init_wasm_game(wasm_bytes: &'static [u8]) {
     // Store the game state
     let game = WasmGame {
         store,
-        instance,
         game_update,
         game_render,
         set_direction,
@@ -210,7 +208,7 @@ fn register_framebuffer_functions<T>(linker: &mut Linker<T>) {
     // println(ptr: i32, len: i32)
     linker
         .func_wrap("env", "println",
-            |mut caller: Caller<T>, ptr: i32, len: i32| {
+            |caller: Caller<T>, ptr: i32, len: i32| {
                 // Get WASM memory
                 let memory = caller.get_export("memory")
                     .and_then(|e| e.into_memory())

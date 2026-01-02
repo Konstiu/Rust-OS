@@ -10,7 +10,6 @@ use rust_os::{
     memory::{self, BootInfoFrameAllocator},
 };
 use x86_64::VirtAddr;
-use rust_os::framebuffer::{framebuffer_size, put_pixel, Rgb, draw_cell, clear_color};
 use rust_os::wasm_game;
 
 extern crate alloc;
@@ -66,6 +65,7 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     #[cfg(test)]
     test_main();
 
+    #[allow(unreachable_code)]
     hlt_loop()
 }
 
