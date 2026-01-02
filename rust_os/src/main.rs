@@ -5,12 +5,14 @@
 #![reexport_test_harness_main = "test_main"]
 use bootloader_api::BootInfo;
 use core::panic::PanicInfo;
+use rust_os::task::executor::Executor;
+use rust_os::task::{Task, shell};
+use rust_os::wasm_game;
 use rust_os::{
     allocator, default_entry_point, hlt_loop, init_kernel,
     memory::{self, BootInfoFrameAllocator},
 };
 use x86_64::VirtAddr;
-use rust_os::wasm_game;
 
 extern crate alloc;
 
@@ -20,7 +22,7 @@ static SNAKE_WASM: &[u8] = include_bytes!("wasm/snake.wasm");
 static COWSAY_WASM: &[u8] = include_bytes!("wasm/cowsay.wasm");
 
 #[cfg(not(test))]
-use rust_os::task::{Task, executor::Executor, keyboard};
+use rust_os::task::keyboard;
 
 #[cfg(test)]
 use rust_os::test_panic_handler;
@@ -34,7 +36,6 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
             .expect("Could not get framebuffer from boot info"),
     );
 
-
     let phys_mem_offset = VirtAddr::new(
         boot_info
             .physical_memory_offset
@@ -46,11 +47,10 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
-
     //wasm_game::init_wasm_game(SNAKE_WASM);
     //wasm_game::render_game();
 
-    wasm_game::init_wasm_game(COWSAY_WASM);
+    /*wasm_game::init_wasm_game(COWSAY_WASM);
     wasm_game::render_game();
 
 
@@ -59,8 +59,14 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
             let mut executor = Executor::new();
             executor.spawn(Task::new(keyboard::print_keypresses()));
             executor.run();
-        }
+        }*/
 
+    {
+        let mut executor = Executor::new();
+        // executor.spawn(Task::new(keyboard::print_keypresses())); // Remove this
+        executor.spawn(Task::new(shell::run())); // Add this
+        executor.run();
+    }
 
     #[cfg(test)]
     test_main();
