@@ -4,9 +4,10 @@
 #![test_runner(rust_os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 use bootloader_api::BootInfo;
-use core::{panic::PanicInfo, ptr::slice_from_raw_parts};
+use core::panic::PanicInfo;
 use rust_os::{
-    allocator, default_entry_point, filesystem, hlt_loop, init_kernel, memory::{self, BootInfoFrameAllocator}, println
+    allocator, default_entry_point, hlt_loop, init_kernel,
+    memory::{self, BootInfoFrameAllocator},
 };
 use x86_64::VirtAddr;
 use rust_os::wasm_game;
@@ -45,19 +46,6 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
-    let ramdisk: &[u8] = unsafe {
-        &*slice_from_raw_parts(
-            boot_info.ramdisk_addr.into_option().expect("Could not get ramdisk address. Ramdisk may not be set") as *const u8,
-            boot_info.ramdisk_len.try_into().expect("Could not convert ramdisk length to usize")
-        )
-    };
-
-    let mut tarfs = filesystem::create_tarfs(ramdisk);
-    for entry in tarfs.list() {
-        let entity = entry.expect("Could not get entity");
-        println!("Entry: {}", entity.name)
-    }
-
 
     //wasm_game::init_wasm_game(SNAKE_WASM);
     //wasm_game::render_game();
@@ -80,7 +68,6 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     #[allow(unreachable_code)]
     hlt_loop()
 }
-
 
 /// This function is called on panic.
 #[cfg(not(test))]
