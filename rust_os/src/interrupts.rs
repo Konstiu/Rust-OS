@@ -8,7 +8,7 @@ use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, Pag
 use crate::serial_println;
 use crate::task::keyboard::add_scancode;
 use crate::wasm_game;
-use crate::{gdt, hlt_loop, print, println};
+use crate::{gdt, hlt_loop, println};
 use x86_64::instructions::port::Port;
 
 extern "x86-interrupt" fn page_fault_handler(
@@ -145,3 +145,4 @@ mod tests {
         x86_64::instructions::interrupts::int3();
     }
 }
+

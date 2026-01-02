@@ -7,7 +7,6 @@ use bootloader_api::BootInfo;
 use core::panic::PanicInfo;
 use rust_os::task::executor::Executor;
 use rust_os::task::{Task, shell};
-use rust_os::wasm_game;
 use rust_os::{
     allocator, default_entry_point, hlt_loop, init_kernel,
     memory::{self, BootInfoFrameAllocator},
