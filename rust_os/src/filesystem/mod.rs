@@ -1,35 +1,87 @@
-use alloc::borrow::Cow;
-use no_std_io::io::{self, Cursor};
-use tarfs::TarFS;
+use alloc::{borrow::Cow, string::String, vec::Vec};
+use tarfs::{Entity, TarFS, Type};
 
-struct InMemoryDevice<T> {
-    cursor: Cursor<T>
+mod error;
+mod tar;
+
+pub use error::{Error, Result};
+
+pub struct FileSystem {
+    inner: TarFS
 }
 
-impl<T> InMemoryDevice<T> {
-    fn new(inner: T) -> Self {
-        InMemoryDevice { cursor: Cursor::new(inner) }
+pub enum FileType {
+    File,
+    HardLink,
+    SymLink,
+    Dir,
+}
+
+impl TryFrom<Type> for FileType {
+    type Error = Error;
+
+    fn try_from(value: Type) -> Result<Self> {
+        match value {
+           Type::File => Ok(FileType::File),
+           Type::HardLink => Ok(FileType::HardLink),
+           Type:: SymbLink => Ok(FileType::SymLink),
+           Type::Dir => Ok(FileType::Dir),
+           _ => Err(Error::UnexpectedFileType),
+        }
     }
 }
 
-impl<T: AsRef<[u8]>> io::Read for InMemoryDevice<T> {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.cursor.read(buf)
+pub struct FileMetadata {
+    pub name: String,
+    pub size: usize,
+    pub file_type: FileType 
+}
+
+impl TryFrom<Entity> for FileMetadata {
+    type Error = Error;
+
+    fn try_from(value: Entity) -> Result<Self> {
+        let file_type = value._type.try_into()?;
+        Ok(FileMetadata { 
+            name: value.name,
+            size: value.size,
+            file_type,
+        })
     }
 }
 
-impl<T: AsRef<[u8]>> io::Seek for InMemoryDevice<T> {
-    fn seek(&mut self, pos: io::SeekFrom) -> io::Result<u64> {
-        self.cursor.seek(pos)
+impl FileSystem {
+
+    pub fn from_tar(buffer: Cow<'static, [u8]>) -> Result<FileSystem> {
+        let tar_fs = tar::create_tar_fs(buffer)?;
+        let file_system = FileSystem {
+            inner: tar_fs
+        };
+        Ok(file_system)
+    } 
+
+    pub fn read(&mut self, path: &str) -> Result<Vec<u8>> {
+        let data = self.inner.read_entire_file(path)?;
+        Ok(data)
     }
+
+    pub fn read_to_string(&mut self, path: &str) -> Result<String> {
+        let data = self.inner.read_to_string(path)?;
+        Ok(data)
+    }
+
+    pub fn read_into(&mut self, path: &str, position: usize, buffer: &mut [u8]) -> Result<usize> {
+        let bytes_read = self.inner.read_file(path, position, buffer)?;
+        Ok(bytes_read)
+    }
+
+    pub fn read_dir(&mut self, path: &str) -> Result<Vec<FileMetadata>> {
+        let entries = self.inner.list_by_path_shallow(path)?;
+        let data = entries
+            .into_iter()
+            .map(FileMetadata::try_from)
+            .collect::<Result<Vec<_>>>()?;
+        Ok(data)
+    }
+    
 }
-
-impl<T: AsRef<[u8]>> tarfs::Device for InMemoryDevice<T> {}    
-
-
-pub fn create_tarfs(buffer: impl Into<Cow<'static, [u8]>>) -> TarFS {
-    TarFS::from_device(InMemoryDevice::new(buffer.into()))
-        .expect("Could not create TarFS")
-}
-
-
