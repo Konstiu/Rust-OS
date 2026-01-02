@@ -194,13 +194,19 @@ impl FrameBufferWriter {
 
     fn backspace(&mut self) {
         let width = CHAR_RASTER_WIDTH + LETTER_SPACING;
-        if self.x_pos >= width {
+        if self.x_pos >= BORDER_PADDING + width {
             self.x_pos -= width;
-            let current_x = self.x_pos;
-            let current_y = self.y_pos;
+            let start_x = self.x_pos;
+            let start_y = self.y_pos;
+
+            // Overwrite the character with a space
+            // write_char will advance x_pos, so we need to reset it
+            // afterwards
             self.write_char(' ');
-            self.x_pos = current_x;
-            self.y_pos = current_y;
+
+            // Restore position to the cleared spot
+            self.x_pos = start_x;
+            self.y_pos = start_y;
         }
     }
 
