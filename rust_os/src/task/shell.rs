@@ -1,3 +1,4 @@
+use crate::framebuffer::with_framebuffer_writer;
 use crate::task::keyboard::ScanCodeStream;
 use crate::{print, println};
 use alloc::string::String;
@@ -50,7 +51,7 @@ fn execute_command(command: &str) {
         "help" => println!("Available commands: help, echo, version, clear, snake, cowsay"),
         "version" => println!("RustOS v0.1.0"),
         // FIXME: implement rendering for this
-        //"clear" => print!("\x1b[2J"),
+        "clear" => with_framebuffer_writer(|writer| writer.clear()),
         // FIXME: allocation does not work?
         "snake" => {
             println!("Starting Snake...");
