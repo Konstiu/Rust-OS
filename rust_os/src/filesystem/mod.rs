@@ -27,6 +27,13 @@ pub struct FileMetadata {
     pub file_type: FileType 
 }
 
+impl FileMetadata {
+    pub fn name(&self) -> &str {
+        let path = self.path.trim_end_matches('/');
+        path.rsplit('/').next().unwrap_or("")
+    }
+}
+
 impl FileSystem {
 
     pub fn from_tar(buffer: Cow<'static, [u8]>) -> Result<FileSystem> {
