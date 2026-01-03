@@ -4,7 +4,7 @@ RAMDISK_TAR ?= ramdisk.tar
 RAMDISK_TEST_DIR ?= ramdisk_test
 RAMDISK_TEST_TAR ?= ramdisk_test.tar
 
-.PHONY: build run test ramdisk ramdisk_test
+.PHONY: build run test ramdisk ramdisk_test clean
 
 build:
 	$(CARGO) build -p rust_os --target x86_64-unknown-none
@@ -20,3 +20,6 @@ ramdisk:
 
 ramdisk_test:
 	tar --format=ustar -C $(RAMDISK_TEST_DIR) -cf $(RAMDISK_TEST_TAR) .
+
+clean:
+	rm -f $(RAMDISK_TAR) $(RAMDISK_TEST_TAR)
