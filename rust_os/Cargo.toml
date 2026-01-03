@@ -9,6 +9,9 @@ authors = [
     "Pritzl Johannes Benedikt <>",
 ]
 
+[lib]
+doctest = false
+
 [dependencies]
 bootloader_api = "0.11.13"
 volatile = "0.2.6"
