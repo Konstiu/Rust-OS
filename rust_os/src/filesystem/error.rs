@@ -1,4 +1,5 @@
 use core::fmt;
+use alloc::string::FromUtf8Error;
 use no_std_io::io;
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -18,6 +19,7 @@ pub enum Error {
     WouldBlock,
     InvalidInput,
     InvalidData,
+    InvalidPathTraversal,
     TimedOut,
     WriteZero,
     Interrupted,
@@ -26,6 +28,7 @@ pub enum Error {
     Uncategorized,
     MountFailed,
     UnexpectedFileType,
+    NotUtf8Encoded
 }
 
 impl Error {
@@ -44,6 +47,7 @@ impl Error {
             Error::WouldBlock => "operation would block",
             Error::InvalidInput => "invalid input parameter",
             Error::InvalidData => "invalid data",
+            Error::InvalidPathTraversal => "invalid path traversal",
             Error::TimedOut => "timed out",
             Error::WriteZero => "write zero",
             Error::Interrupted => "operation interrupted",
@@ -52,6 +56,7 @@ impl Error {
             Error::Uncategorized => "uncategorized",
             Error::MountFailed => "filesystem mount failed",
             Error::UnexpectedFileType => "unexpected filesystem entry type",
+            Error::NotUtf8Encoded => "not utf-8 encoded"
         }
     }
 }
@@ -92,5 +97,11 @@ impl From<io::Error> for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
+    }
+}
+
+impl From<FromUtf8Error> for Error {
+    fn from(_value: FromUtf8Error) -> Self {
+        Error::NotUtf8Encoded
     }
 }

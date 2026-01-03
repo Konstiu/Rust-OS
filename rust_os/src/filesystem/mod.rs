@@ -1,13 +1,16 @@
 use alloc::{borrow::Cow, string::String, vec::Vec};
-use tarfs::{Entity, TarFS, Type};
 
+mod backends;
 mod error;
-mod tar;
+mod path;
 
 pub use error::{Error, Result};
 
+use crate::filesystem::{backends::FsBackendImpl, path::CanonPathString};
+use alloc::vec;
+
 pub struct FileSystem {
-    inner: TarFS
+    backend: FsBackendImpl
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -18,71 +21,47 @@ pub enum FileType {
     Dir,
 }
 
-impl TryFrom<Type> for FileType {
-    type Error = Error;
-
-    fn try_from(value: Type) -> Result<Self> {
-        match value {
-           Type::File => Ok(FileType::File),
-           Type::HardLink => Ok(FileType::HardLink),
-           Type:: SymbLink => Ok(FileType::SymLink),
-           Type::Dir => Ok(FileType::Dir),
-           _ => Err(Error::UnexpectedFileType),
-        }
-    }
-}
-
 pub struct FileMetadata {
-    pub name: String,
+    pub path: String,
     pub size: usize,
     pub file_type: FileType 
-}
-
-impl TryFrom<Entity> for FileMetadata {
-    type Error = Error;
-
-    fn try_from(value: Entity) -> Result<Self> {
-        let file_type = value._type.try_into()?;
-        Ok(FileMetadata { 
-            name: value.name,
-            size: value.size,
-            file_type,
-        })
-    }
 }
 
 impl FileSystem {
 
     pub fn from_tar(buffer: Cow<'static, [u8]>) -> Result<FileSystem> {
-        let tar_fs = tar::create_tar_fs(buffer)?;
-        let file_system = FileSystem {
-            inner: tar_fs
-        };
-        Ok(file_system)
+        let backend = FsBackendImpl::from_tar(buffer)?;
+        Ok(FileSystem { backend })
     } 
 
     pub fn read(&mut self, path: &str) -> Result<Vec<u8>> {
-        let data = self.inner.read_entire_file(path)?;
-        Ok(data)
+        let canonicalized_path: CanonPathString = path.try_into()?;
+        let metadata = self.backend.file_metadata(&canonicalized_path)?;
+        let mut buffer = vec![0u8; metadata.size];
+        let bytes_read = self.read_into_buffer(&canonicalized_path, 0, &mut buffer)?;
+        buffer.truncate(bytes_read);
+        Ok(buffer)
     }
 
     pub fn read_to_string(&mut self, path: &str) -> Result<String> {
-        let data = self.inner.read_to_string(path)?;
-        Ok(data)
+        let bytes = self.read(path)?;
+        let string = String::from_utf8(bytes)?;
+        Ok(string)
     }
 
     pub fn read_into(&mut self, path: &str, position: usize, buffer: &mut [u8]) -> Result<usize> {
-        let bytes_read = self.inner.read_file(path, position, buffer)?;
-        Ok(bytes_read)
+        let canonicalized_path: CanonPathString = path.try_into()?; 
+        self.read_into_buffer(&canonicalized_path, position, buffer)
     }
 
-    pub fn read_dir(&mut self, path: &str) -> Result<Vec<FileMetadata>> {
-        let entries = self.inner.list_by_path_shallow(path)?;
-        let data = entries
-            .into_iter()
-            .map(FileMetadata::try_from)
-            .collect::<Result<Vec<_>>>()?;
-        Ok(data)
+    pub fn read_dir(&self, path: &str) -> Result<Vec<FileMetadata>> {
+        let canonicalized_path: CanonPathString = path.try_into()?;
+        let entries = self.backend.read_dir(&canonicalized_path)?;
+        Ok(entries)
     }
-    
+
+    fn read_into_buffer(&mut self, canonicalized_path: &CanonPathString, position: usize, buffer: &mut[u8]) -> Result<usize> {
+        let bytes_read = self.backend.read_into(&canonicalized_path, position, buffer)?;
+        Ok(bytes_read)
+    }
 }
