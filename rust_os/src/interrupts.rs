@@ -145,4 +145,3 @@ mod tests {
         x86_64::instructions::interrupts::int3();
     }
 }
-
