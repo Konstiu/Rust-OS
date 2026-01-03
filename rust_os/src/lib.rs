@@ -5,15 +5,13 @@
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
-use bootloader_api::info::FrameBuffer;
-use core::panic::PanicInfo;
-use x86_64::instructions::hlt;
-
-#[cfg(test)]
 use bootloader_api::BootInfo;
+use core::panic::PanicInfo;
+use x86_64::{instructions::hlt, VirtAddr};
 
 pub mod allocator;
 pub mod entry_point;
+pub mod filesystem;
 pub mod framebuffer;
 pub mod gdt;
 pub mod interrupts;
@@ -25,10 +23,26 @@ pub mod wasm_game;
 
 extern crate alloc;
 
-pub fn init_kernel(framebuffer: &'static mut FrameBuffer) {
+pub fn init_kernel(boot_info: &'static mut BootInfo) {
     gdt::initialize_global_descriptor_table();
+    let framebuffer = boot_info
+        .framebuffer
+        .as_mut()
+        .expect("Could not get framebuffer from boot info");
     framebuffer::init_framebuffer_writer(framebuffer);
     interrupts::initialize_interrupt_handling();
+
+    let phys_mem_offset = VirtAddr::new(
+        boot_info
+            .physical_memory_offset
+            .into_option()
+            .expect("Could not obtain physical memory offset from bootloader"),
+    );
+    let mut mapper = unsafe { memory::init(phys_mem_offset) };
+    let mut frame_allocator =
+        unsafe { memory::BootInfoFrameAllocator::init(&boot_info.memory_regions) };
+
+    allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 }
 
 pub trait Testable {
@@ -78,12 +92,7 @@ default_entry_point!(test_kernel_main);
 
 #[cfg(test)]
 fn test_kernel_main(boot_info: &'static mut BootInfo) -> ! {
-    init_kernel(
-        boot_info
-            .framebuffer
-            .as_mut()
-            .expect("Could not get framebuffer from boot info"),
-    );
+    init_kernel(boot_info);
     test_main();
     hlt_loop()
 }

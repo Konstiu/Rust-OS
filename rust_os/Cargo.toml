@@ -9,6 +9,9 @@ authors = [
     "Pritzl Johannes Benedikt <>",
 ]
 
+[lib]
+doctest = false
+
 [dependencies]
 bootloader_api = "0.11.13"
 volatile = "0.2.6"
@@ -20,7 +23,7 @@ pc-keyboard = "0.8.0"
 linked_list_allocator = "0.10.5"
 noto-sans-mono-bitmap = "0.3.1"
 wasmi = { version = "1.0.6", default-features = false}
-
+no_std_io = "0.6.0"
 
 [dependencies.lazy_static]
 version = "1.0"
@@ -39,6 +42,10 @@ default-features = false
 version = "0.3.31"
 default-features = false
 features = ["alloc"]
+
+[dependencies.tarfs]
+version = "0.2.6"
+default-features = false
 
 [[bin]]
 name = "rust_os"
