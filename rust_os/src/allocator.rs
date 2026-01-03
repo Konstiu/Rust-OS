@@ -14,7 +14,7 @@ pub struct DummyAllocator;
 static ALLOCATOR: LockedHeap = LockedHeap::empty();
 
 pub const HEAP_START: usize = 0x_6969_0420_0000; // random not used address
-pub const HEAP_SIZE: usize = 100 * 1024; // 100 KiB
+pub const HEAP_SIZE: usize = 500 * 1024; // 500 KiB
 
 pub fn init_heap(
     mapper: &mut impl Mapper<Size4KiB>,
