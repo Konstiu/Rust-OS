@@ -1,4 +1,4 @@
-use alloc::{borrow::Cow, collections::btree_map::BTreeMap, vec::Vec};
+use alloc::{borrow::Cow, collections::btree_map::BTreeMap, vec::Vec, string::String};
 use no_std_io::io::{Cursor, Read, Seek};
 use tarfs::{TarFS, Type, Entity};
 
@@ -29,15 +29,15 @@ impl TarBackend {
     }
 
     pub fn file_metadata(&self, path: &CanonPathString) -> Result<FileMetadata> {
-        let file_entity = self.entries.get(path).ok_or(Error::NotFound)?;
-        let file_metadata = file_entity.try_into()?;
+        let file_entry= self.entries.get_key_value(path).ok_or(Error::NotFound)?;
+        let file_metadata = file_entry.try_into()?;
         Ok(file_metadata)
     }
 
     pub fn read_dir(&self, path: &CanonPathString) -> Result<Vec<FileMetadata>> {
         let entries = self.entries.iter()
             .filter(|e| is_immediate_child(path.as_str(), e.0.as_str()))
-            .map(|e| FileMetadata::try_from(e.1))
+            .map(|e| FileMetadata::try_from(e))
             .collect::<Result<Vec<_>>>()?;
 
         Ok(entries)
@@ -90,14 +90,19 @@ impl TryFrom<&Type> for FileType {
     }
 }
 
-impl TryFrom<&Entity> for FileMetadata {
+impl TryFrom<(&CanonPathString, &Entity)> for FileMetadata {
     type Error = Error;
+    
+    fn try_from(value: (&CanonPathString, &Entity)) -> core::result::Result<Self, Self::Error> {
+        let canon_path = value.0;
+        let entity = value.1;
 
-    fn try_from(value: &Entity) -> Result<Self> {
-        let file_type = (&value._type).try_into()?;
+        let file_type = (&entity._type).try_into()?;
+        let path: String = canon_path.as_str().into();
+
         Ok(FileMetadata { 
-            path: value.name.clone(),
-            size: value.size,
+            path,
+            size: entity.size,
             file_type,
         })
     }
