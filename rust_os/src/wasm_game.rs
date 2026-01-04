@@ -1,8 +1,8 @@
+use wasmi::{Caller, Linker, Store, Engine, Module, Func};
 use crate::framebuffer::{self, Rgb};
-use alloc::vec;
-use conquer_once::spin::OnceCell;
 use spin::Mutex;
-use wasmi::{Caller, Engine, Func, Linker, Module, Store};
+use conquer_once::spin::OnceCell;
+use alloc::vec;
 
 static WASM_GAME: OnceCell<Mutex<WasmGame>> = OnceCell::uninit();
 

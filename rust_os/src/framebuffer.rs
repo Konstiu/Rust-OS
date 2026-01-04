@@ -310,11 +310,7 @@ impl FrameBufferWriter {
             PixelFormat::Rgb => [c.r, c.g, c.b, 0],
             PixelFormat::Bgr => [c.b, c.g, c.r, 0],
             PixelFormat::U8 => {
-                let v = if (c.r as u16 + c.g as u16 + c.b as u16) > 0 {
-                    0xF
-                } else {
-                    0x0
-                };
+                let v = if (c.r as u16 + c.g as u16 + c.b as u16) > 0 { 0xF } else { 0x0 };
                 [v, 0, 0, 0]
             }
             other => panic!("pixel format {other:?} not supported"),
@@ -332,6 +328,7 @@ impl FrameBufferWriter {
     // ------------------------------------------------------------------------
     // Graphics Operations
     // ------------------------------------------------------------------------
+
 
     pub fn clear_color(&mut self, c: Rgb) {
         for y in 0..self.info.height {
@@ -360,14 +357,7 @@ impl FrameBufferWriter {
         self.fill_rect(px, py, cell_size, cell_size, color);
     }
 
-    pub fn draw_cell_inset(
-        &mut self,
-        cx: usize,
-        cy: usize,
-        cell_size: usize,
-        inset: usize,
-        color: Rgb,
-    ) {
+    pub fn draw_cell_inset(&mut self, cx: usize, cy: usize, cell_size: usize, inset: usize, color: Rgb) {
         let px = cx * cell_size + inset;
         let py = cy * cell_size + inset;
         let size = cell_size.saturating_sub(inset * 2);

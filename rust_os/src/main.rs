@@ -28,12 +28,7 @@ use rust_os::test_panic_handler;
 
 default_entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
-    init_kernel(
-        boot_info
-            .framebuffer
-            .as_mut()
-            .expect("Could not get framebuffer from boot info"),
-    );
+    init_kernel(boot_info);
 
     let phys_mem_offset = VirtAddr::new(
         boot_info
@@ -46,13 +41,6 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
-    //wasm_game::init_wasm_game(SNAKE_WASM);
-    //wasm_game::render_game();
-
-    /*wasm_game::init_wasm_game(COWSAY_WASM);
-    wasm_game::render_game();
-
-
     #[cfg(not(test))]
         {
             let mut executor = Executor::new();
@@ -62,8 +50,7 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 
     {
         let mut executor = Executor::new();
-        // executor.spawn(Task::new(keyboard::print_keypresses())); // Remove this
-        executor.spawn(Task::new(shell::run())); // Add this
+        executor.spawn(Task::new(shell::run()));
         executor.run();
     }
 
