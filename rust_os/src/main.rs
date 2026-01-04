@@ -7,11 +7,7 @@ use bootloader_api::BootInfo;
 use core::panic::PanicInfo;
 use rust_os::task::executor::Executor;
 use rust_os::task::{Task, shell};
-use rust_os::{
-    allocator, default_entry_point, hlt_loop, init_kernel,
-    memory::{self, BootInfoFrameAllocator},
-};
-use x86_64::VirtAddr;
+use rust_os::{default_entry_point, hlt_loop, init_kernel};
 
 extern crate alloc;
 
@@ -20,34 +16,15 @@ static SNAKE_WASM: &[u8] = include_bytes!("wasm/snake.wasm");
 #[allow(dead_code)]
 static COWSAY_WASM: &[u8] = include_bytes!("wasm/cowsay.wasm");
 
-#[cfg(not(test))]
-use rust_os::task::keyboard;
 
 #[cfg(test)]
 use rust_os::test_panic_handler;
 
 default_entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
-    init_kernel(boot_info);
-
-    let phys_mem_offset = VirtAddr::new(
-        boot_info
-            .physical_memory_offset
-            .into_option()
-            .expect("Could not obtain physical memory offset from bootloader"),
-    );
-    let mut mapper = unsafe { memory::init(phys_mem_offset) };
-    let mut frame_allocator = unsafe { BootInfoFrameAllocator::init(&boot_info.memory_regions) };
-
-    allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
+    init_kernel(boot_info); 
 
     #[cfg(not(test))]
-        {
-            let mut executor = Executor::new();
-            executor.spawn(Task::new(keyboard::print_keypresses()));
-            executor.run();
-        }*/
-
     {
         let mut executor = Executor::new();
         executor.spawn(Task::new(shell::run()));

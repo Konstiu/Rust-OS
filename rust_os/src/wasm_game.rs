@@ -1,10 +1,17 @@
 use wasmi::{Caller, Linker, Store, Engine, Module, Func};
+use crate::framebuffer::clear_color;
 use crate::framebuffer::{self, Rgb};
 use spin::Mutex;
 use conquer_once::spin::OnceCell;
-use alloc::vec;
+use core::sync::atomic::{AtomicBool, Ordering};
+use pc_keyboard::{DecodedKey, HandleControl, Keyboard, ScancodeSet1, layouts};
+use crate::print;
+use crate::serial_println;
 
-static WASM_GAME: OnceCell<Mutex<WasmGame>> = OnceCell::uninit();
+static WASM_GAME: Mutex<Option<WasmGame>> = Mutex::new(None);
+static GAME_RUNNING: AtomicBool = AtomicBool::new(false);
+static GAME_KEYBOARD: OnceCell<Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>>> = OnceCell::uninit();
+static PENDING_KEY: Mutex<Option<u8>> = Mutex::new(None);
 
 pub struct WasmGame {
     store: Store<()>,
@@ -12,6 +19,80 @@ pub struct WasmGame {
     game_render: Func,
     set_direction: Func,
     handle_key: Func,
+}
+
+
+pub fn is_game_running() -> bool {
+    GAME_RUNNING.load(Ordering::Relaxed)
+}
+
+pub fn handle_scancode(scancode: u8) {
+    serial_println!("Scancode received: {}", scancode);
+    
+    let keyboard_mutex = GAME_KEYBOARD.get_or_init(|| {
+        Mutex::new(Keyboard::new(
+            ScancodeSet1::new(),
+            layouts::Us104Key,
+            HandleControl::Ignore,
+        ))
+    });
+    
+    let mut keyboard = keyboard_mutex.lock();
+    
+    match keyboard.add_byte(scancode) {
+        Ok(Some(key_event)) => {
+            serial_println!("KeyEvent received: {:?}", key_event);
+            
+            if let Some(key) = keyboard.process_keyevent(key_event) {
+                serial_println!("DecodedKey: {:?}", key);
+                
+                let is_escape = matches!(key, DecodedKey::RawKey(pc_keyboard::KeyCode::Escape))
+                    || matches!(key, DecodedKey::Unicode('\u{1b}'));
+                
+                if is_escape {
+                    GAME_RUNNING.store(false, Ordering::Relaxed);
+                    serial_println!("ESC pressed - setting GAME_RUNNING to false");
+                    clear_color(Rgb { r: 0, g: 0, b: 0 });
+                    print!("> ");
+                    return;
+                }
+                
+                let key_code: u8 = match key {
+                    DecodedKey::Unicode(c) => c as u8,
+                    DecodedKey::RawKey(code) => {
+                        use pc_keyboard::KeyCode;
+                        match code {
+                            KeyCode::ArrowUp => 88,
+                            KeyCode::ArrowDown => 102,
+                            KeyCode::ArrowLeft => 101,
+                            KeyCode::ArrowRight => 103,
+                            KeyCode::Backspace => 8,
+                            KeyCode::Return => 10,
+                            _ => code as u8,
+                        }
+                    }
+                };
+                
+                serial_println!("Sending key_code to WASM: {}", key_code);
+                *PENDING_KEY.lock() = Some(key_code);
+                //handle_key(key_code);
+                //render_game();
+            }
+        }
+        Ok(None) => {
+            serial_println!("add_byte returned None (partial sequence)");
+        }
+        Err(e) => {
+            serial_println!("add_byte error: {:?}", e);
+        }
+    }
+}
+
+pub fn process_pending_keys() {
+    if let Some(key_code) = PENDING_KEY.lock().take() {
+        serial_println!("Processing queued key_code: {}", key_code);
+        handle_key(key_code);
+    }
 }
 
 /// Initialize and start the WASM Snake game
@@ -65,13 +146,13 @@ pub fn init_wasm_game(wasm_bytes: &'static [u8]) {
         handle_key,
     };
 
-    WASM_GAME.init_once(|| Mutex::new(game));
+    *WASM_GAME.lock() = Some(game);
+    GAME_RUNNING.store(true, Ordering::Relaxed);
 }
 
 /// Update the game (call from timer interrupt)
 pub fn update_game() {
-    if let Some(game_mutex) = WASM_GAME.get() {
-        let mut game = game_mutex.lock();
+    if let Some(game) = WASM_GAME.lock().as_mut() {
         let update_fn = game
             .game_update
             .typed::<(), ()>(&game.store)
@@ -82,8 +163,7 @@ pub fn update_game() {
 
 /// Handle keyboard input - pass raw key code to WASM
 pub fn handle_key(key_code: u8) {
-    if let Some(game_mutex) = WASM_GAME.get() {
-        let mut game = game_mutex.lock();
+    if let Some(game) = WASM_GAME.lock().as_mut() {
         let handle_key_fn = game
             .handle_key
             .typed::<i32, ()>(&game.store)
@@ -94,8 +174,7 @@ pub fn handle_key(key_code: u8) {
 
 /// Render the game (call from timer interrupt after update)
 pub fn render_game() {
-    if let Some(game_mutex) = WASM_GAME.get() {
-        let mut game = game_mutex.lock();
+    if let Some(game) = WASM_GAME.lock().as_mut() {
         let render_fn = game
             .game_render
             .typed::<(), ()>(&game.store)
@@ -107,8 +186,7 @@ pub fn render_game() {
 /// Handle keyboard input for the game
 /// Direction: 0=right, 1=down, 2=left, 3=up
 pub fn handle_direction(direction: i32) {
-    if let Some(game_mutex) = WASM_GAME.get() {
-        let mut game = game_mutex.lock();
+    if let Some(game) = WASM_GAME.lock().as_mut() {
         let set_dir_fn = game
             .set_direction
             .typed::<i32, ()>(&game.store)
@@ -227,18 +305,21 @@ fn register_framebuffer_functions<T>(linker: &mut Linker<T>) {
                 .get_export("memory")
                 .and_then(|e| e.into_memory())
                 .expect("Failed to get WASM memory");
-
-            // Read the string bytes from WASM memory
-            let mut buffer = vec![0u8; len as usize];
+            
+            // Use a fixed-size stack buffer instead of heap allocation
+            const MAX_PRINT_LEN: usize = 256;
+            let len = core::cmp::min(len as usize, MAX_PRINT_LEN);
+            let mut buffer = [0u8; MAX_PRINT_LEN];
+            
             memory
-                .read(&caller, ptr as usize, &mut buffer)
+                .read(&caller, ptr as usize, &mut buffer[..len])
                 .expect("Failed to read memory");
-
-            // Convert to string and print using your println! macro
-            if let Ok(s) = core::str::from_utf8(&buffer) {
+            
+            // Convert to string and print
+            if let Ok(s) = core::str::from_utf8(&buffer[..len]) {
                 crate::serial_println!("WASM println: ptr={}, len={}, str='{}'", ptr, len, s);
                 crate::println!("{}", s);
             }
         })
-        .unwrap();
+    .unwrap();
 }

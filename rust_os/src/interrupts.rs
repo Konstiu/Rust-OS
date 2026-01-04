@@ -1,11 +1,10 @@
 use lazy_static::lazy_static;
-use pc_keyboard::{DecodedKey, Keyboard, ScancodeSet1, layouts};
+use pc_keyboard::{Keyboard, ScancodeSet1, layouts};
 use pic8259::ChainedPics;
 use spin::Mutex;
 use x86_64::registers::control::Cr2;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
 
-use crate::serial_println;
 use crate::task::keyboard::add_scancode;
 use crate::wasm_game;
 use crate::{gdt, hlt_loop, println};
@@ -95,9 +94,12 @@ extern "x86-interrupt" fn double_fault_handler(frame: InterruptStackFrame, _: u6
 }
 
 extern "x86-interrupt" fn timer_interrupt_handler(_: InterruptStackFrame) {
-    //print!(".");
-    wasm_game::update_game();
-    wasm_game::render_game();
+
+    if wasm_game::is_game_running() {
+        wasm_game::process_pending_keys();
+        wasm_game::update_game();
+        wasm_game::render_game();
+    }
 
     unsafe {
         PICS.lock()
@@ -106,31 +108,11 @@ extern "x86-interrupt" fn timer_interrupt_handler(_: InterruptStackFrame) {
 }
 
 extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    let mut keyboard = KEYBOARD.lock();
+    //let keyboard = KEYBOARD.lock();
     let mut ps2_port: Port<u8> = Port::new(0x60);
     let scancode = unsafe { ps2_port.read() };
 
     add_scancode(scancode);
-
-    if let Ok(Some(key_event)) = keyboard.add_byte(scancode)
-        && let Some(key) = keyboard.process_keyevent(key_event)
-    {
-        match key {
-            DecodedKey::Unicode(character) => {
-                serial_println!("'{}'", character);
-            }
-            DecodedKey::RawKey(raw_key) => {
-                serial_println!("{:?}", raw_key);
-            }
-        }
-        let key_code: u8 = match key {
-            DecodedKey::Unicode(c) => c as u8,
-            DecodedKey::RawKey(code) => code as u8,
-        };
-        wasm_game::handle_key(key_code);
-        wasm_game::update_game(); // Add this
-        wasm_game::render_game();
-    }
 
     unsafe {
         PICS.lock()
