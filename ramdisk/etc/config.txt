@@ -1,0 +1,2 @@
+CONFIG_VERSION=1
+DEBUG=true
