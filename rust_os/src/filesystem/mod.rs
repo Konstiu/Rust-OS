@@ -10,7 +10,7 @@ use crate::filesystem::{backends::FsBackendImpl, path::CanonPathString};
 use alloc::vec;
 
 pub struct FileSystem {
-    backend: FsBackendImpl
+    backend: FsBackendImpl,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,7 +24,7 @@ pub enum FileType {
 pub struct FileMetadata {
     pub path: String,
     pub size: usize,
-    pub file_type: FileType 
+    pub file_type: FileType,
 }
 
 impl FileMetadata {
@@ -35,11 +35,10 @@ impl FileMetadata {
 }
 
 impl FileSystem {
-
     pub fn from_tar(buffer: Cow<'static, [u8]>) -> Result<FileSystem> {
         let backend = FsBackendImpl::from_tar(buffer)?;
         Ok(FileSystem { backend })
-    } 
+    }
 
     pub fn read(&mut self, path: &str) -> Result<Vec<u8>> {
         let canonicalized_path: CanonPathString = path.try_into()?;
@@ -57,7 +56,7 @@ impl FileSystem {
     }
 
     pub fn read_into(&mut self, path: &str, position: usize, buffer: &mut [u8]) -> Result<usize> {
-        let canonicalized_path: CanonPathString = path.try_into()?; 
+        let canonicalized_path: CanonPathString = path.try_into()?;
         self.read_into_buffer(&canonicalized_path, position, buffer)
     }
 
@@ -67,8 +66,15 @@ impl FileSystem {
         Ok(entries)
     }
 
-    fn read_into_buffer(&mut self, canonicalized_path: &CanonPathString, position: usize, buffer: &mut[u8]) -> Result<usize> {
-        let bytes_read = self.backend.read_into(&canonicalized_path, position, buffer)?;
+    fn read_into_buffer(
+        &mut self,
+        canonicalized_path: &CanonPathString,
+        position: usize,
+        buffer: &mut [u8],
+    ) -> Result<usize> {
+        let bytes_read = self
+            .backend
+            .read_into(&canonicalized_path, position, buffer)?;
         Ok(bytes_read)
     }
 }

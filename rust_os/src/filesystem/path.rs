@@ -20,7 +20,7 @@ impl AsRef<str> for CanonPathString {
 
 impl TryFrom<&str> for CanonPathString {
     type Error = Error;
-    
+
     fn try_from(value: &str) -> Result<Self> {
         let canonicalized_str = canonicalize(value)?;
         Ok(CanonPathString(canonicalized_str))
@@ -30,7 +30,7 @@ impl TryFrom<&str> for CanonPathString {
 fn canonicalize(input: &str) -> Result<String> {
     if input.is_empty() || input == "." || input == "/" || input == "./" {
         return Ok(String::new());
-    } 
+    }
 
     let mut s = input;
     while let Some(rest) = s.strip_prefix("./") {
@@ -38,7 +38,7 @@ fn canonicalize(input: &str) -> Result<String> {
     }
 
     while let Some(rest) = s.strip_prefix('/') {
-       s = rest; 
+        s = rest;
     }
 
     let mut out = String::with_capacity(s.len());
@@ -49,11 +49,11 @@ fn canonicalize(input: &str) -> Result<String> {
             continue;
         }
         if comp == ".." {
-            return Err(Error::InvalidPathTraversal) 
+            return Err(Error::InvalidPathTraversal);
         }
 
-        if ! first {
-           out.push('/'); 
+        if !first {
+            out.push('/');
         }
 
         first = false;

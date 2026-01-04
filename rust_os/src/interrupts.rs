@@ -94,7 +94,6 @@ extern "x86-interrupt" fn double_fault_handler(frame: InterruptStackFrame, _: u6
 }
 
 extern "x86-interrupt" fn timer_interrupt_handler(_: InterruptStackFrame) {
-
     if wasm_game::is_game_running() {
         wasm_game::process_pending_keys();
         wasm_game::update_game();

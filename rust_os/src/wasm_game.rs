@@ -1,16 +1,17 @@
-use wasmi::{Caller, Linker, Store, Engine, Module, Func};
 use crate::framebuffer::clear_color;
 use crate::framebuffer::{self, Rgb};
-use spin::Mutex;
+use crate::print;
+use crate::serial_println;
 use conquer_once::spin::OnceCell;
 use core::sync::atomic::{AtomicBool, Ordering};
 use pc_keyboard::{DecodedKey, HandleControl, Keyboard, ScancodeSet1, layouts};
-use crate::print;
-use crate::serial_println;
+use spin::Mutex;
+use wasmi::{Caller, Engine, Func, Linker, Module, Store};
 
 static WASM_GAME: Mutex<Option<WasmGame>> = Mutex::new(None);
 static GAME_RUNNING: AtomicBool = AtomicBool::new(false);
-static GAME_KEYBOARD: OnceCell<Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>>> = OnceCell::uninit();
+static GAME_KEYBOARD: OnceCell<Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>>> =
+    OnceCell::uninit();
 static PENDING_KEY: Mutex<Option<u8>> = Mutex::new(None);
 
 pub struct WasmGame {
@@ -21,14 +22,13 @@ pub struct WasmGame {
     handle_key: Func,
 }
 
-
 pub fn is_game_running() -> bool {
     GAME_RUNNING.load(Ordering::Relaxed)
 }
 
 pub fn handle_scancode(scancode: u8) {
     serial_println!("Scancode received: {}", scancode);
-    
+
     let keyboard_mutex = GAME_KEYBOARD.get_or_init(|| {
         Mutex::new(Keyboard::new(
             ScancodeSet1::new(),
@@ -36,19 +36,19 @@ pub fn handle_scancode(scancode: u8) {
             HandleControl::Ignore,
         ))
     });
-    
+
     let mut keyboard = keyboard_mutex.lock();
-    
+
     match keyboard.add_byte(scancode) {
         Ok(Some(key_event)) => {
             serial_println!("KeyEvent received: {:?}", key_event);
-            
+
             if let Some(key) = keyboard.process_keyevent(key_event) {
                 serial_println!("DecodedKey: {:?}", key);
-                
+
                 let is_escape = matches!(key, DecodedKey::RawKey(pc_keyboard::KeyCode::Escape))
                     || matches!(key, DecodedKey::Unicode('\u{1b}'));
-                
+
                 if is_escape {
                     GAME_RUNNING.store(false, Ordering::Relaxed);
                     serial_println!("ESC pressed - setting GAME_RUNNING to false");
@@ -56,7 +56,7 @@ pub fn handle_scancode(scancode: u8) {
                     print!("> ");
                     return;
                 }
-                
+
                 let key_code: u8 = match key {
                     DecodedKey::Unicode(c) => c as u8,
                     DecodedKey::RawKey(code) => {
@@ -72,7 +72,7 @@ pub fn handle_scancode(scancode: u8) {
                         }
                     }
                 };
-                
+
                 serial_println!("Sending key_code to WASM: {}", key_code);
                 *PENDING_KEY.lock() = Some(key_code);
                 //handle_key(key_code);
@@ -305,21 +305,21 @@ fn register_framebuffer_functions<T>(linker: &mut Linker<T>) {
                 .get_export("memory")
                 .and_then(|e| e.into_memory())
                 .expect("Failed to get WASM memory");
-            
+
             // Use a fixed-size stack buffer instead of heap allocation
             const MAX_PRINT_LEN: usize = 256;
             let len = core::cmp::min(len as usize, MAX_PRINT_LEN);
             let mut buffer = [0u8; MAX_PRINT_LEN];
-            
+
             memory
                 .read(&caller, ptr as usize, &mut buffer[..len])
                 .expect("Failed to read memory");
-            
+
             // Convert to string and print
             if let Ok(s) = core::str::from_utf8(&buffer[..len]) {
                 crate::serial_println!("WASM println: ptr={}, len={}, str='{}'", ptr, len, s);
                 crate::println!("{}", s);
             }
         })
-    .unwrap();
+        .unwrap();
 }

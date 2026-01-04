@@ -1,5 +1,5 @@
-use core::fmt;
 use alloc::string::FromUtf8Error;
+use core::fmt;
 use no_std_io::io;
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -28,7 +28,7 @@ pub enum Error {
     Uncategorized,
     MountFailed,
     UnexpectedFileType,
-    NotUtf8Encoded
+    NotUtf8Encoded,
 }
 
 impl Error {
@@ -56,7 +56,7 @@ impl Error {
             Error::Uncategorized => "uncategorized",
             Error::MountFailed => "filesystem mount failed",
             Error::UnexpectedFileType => "unexpected filesystem entry type",
-            Error::NotUtf8Encoded => "not utf-8 encoded"
+            Error::NotUtf8Encoded => "not utf-8 encoded",
         }
     }
 }

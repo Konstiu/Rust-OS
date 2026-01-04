@@ -9,19 +9,18 @@ use qemu_runner::{QemuMode, run_qemu_with_kernel};
 // QEMU with isa-debug-exit returns (port << 1) | 1.
 const SUCCESS_EXIT_CODE: i32 = 33;
 
-
 #[derive(Parser, Debug)]
 struct Args {
     #[arg(long)]
     ramdisk: Option<PathBuf>,
 
     #[arg(value_name = "KERNEL")]
-    kernel: PathBuf
+    kernel: PathBuf,
 }
 
 fn main() {
     let args = Args::parse();
-    
+
     let kernel_path = args.kernel;
     let ramdisk_path = args.ramdisk;
     let is_test = is_test_binary(&kernel_path);

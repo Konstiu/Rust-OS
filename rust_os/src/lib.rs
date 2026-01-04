@@ -7,7 +7,7 @@
 
 use bootloader_api::BootInfo;
 use core::panic::PanicInfo;
-use x86_64::{instructions::hlt, VirtAddr};
+use x86_64::{VirtAddr, instructions::hlt};
 
 pub mod allocator;
 pub mod entry_point;

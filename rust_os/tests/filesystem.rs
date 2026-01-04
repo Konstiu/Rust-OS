@@ -11,8 +11,7 @@ use conquer_once::spin::OnceCell;
 use rust_os::{
     default_entry_point,
     filesystem::{Error, FileSystem, FileType},
-    hlt_loop,
-    init_kernel
+    hlt_loop, init_kernel,
 };
 
 default_entry_point!(main);
@@ -25,12 +24,8 @@ fn main(boot_info: &'static mut BootInfo) -> ! {
         .into_option()
         .expect("Could not get ramdisk address from boot info. Ramdisk may not have been included");
 
-    let ramdisk = unsafe {
-        slice::from_raw_parts(
-            ramdisk_addr as *const u8,
-            boot_info.ramdisk_len as usize
-        )
-    };
+    let ramdisk =
+        unsafe { slice::from_raw_parts(ramdisk_addr as *const u8, boot_info.ramdisk_len as usize) };
 
     RAMDISK.init_once(|| ramdisk);
 
@@ -43,7 +38,6 @@ fn main(boot_info: &'static mut BootInfo) -> ! {
 fn panic(info: &PanicInfo) -> ! {
     rust_os::test_panic_handler(info)
 }
-
 
 #[test_case]
 fn test_file_read() {
@@ -183,7 +177,5 @@ fn test_file_not_found() {
 fn create_fs() -> FileSystem {
     let ramdisk = *RAMDISK.get().unwrap();
     FileSystem::from_tar(ramdisk.into())
-        .unwrap_or_else(|e| {
-        panic!("Failed to create filesystem: {e}")
-    })
+        .unwrap_or_else(|e| panic!("Failed to create filesystem: {e}"))
 }

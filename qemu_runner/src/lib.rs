@@ -22,11 +22,11 @@ pub fn run_qemu_with_kernel<P, R>(
 ) -> Result<ExitStatus, Box<dyn Error>>
 where
     P: AsRef<Path>,
-    R: AsRef<Path>
- {
-     let image_path = create_bios_disk_image(
-         kernel_path.as_ref(),
-         ramdisk_path.as_ref().map(|p| p.as_ref())
+    R: AsRef<Path>,
+{
+    let image_path = create_bios_disk_image(
+        kernel_path.as_ref(),
+        ramdisk_path.as_ref().map(|p| p.as_ref()),
     )?;
     run_qemu_with_image(&image_path, mode)
 }
@@ -55,13 +55,12 @@ fn run_qemu_with_image(image_path: &Path, mode: QemuMode) -> Result<ExitStatus, 
 
 fn create_bios_disk_image(
     kernel_path: &Path,
-    ramdisk_path: Option<&Path>
-) -> Result<PathBuf, Box<dyn Error>>
-{
+    ramdisk_path: Option<&Path>,
+) -> Result<PathBuf, Box<dyn Error>> {
     let mut disk_image_builder = DiskImageBuilder::new(kernel_path.to_path_buf());
 
-    if let Some(ramdisk) = ramdisk_path  {
-        disk_image_builder.set_ramdisk(ramdisk.to_path_buf()); 
+    if let Some(ramdisk) = ramdisk_path {
+        disk_image_builder.set_ramdisk(ramdisk.to_path_buf());
     }
 
     let mut image_path = kernel_path.to_path_buf();

@@ -16,13 +16,12 @@ static SNAKE_WASM: &[u8] = include_bytes!("wasm/snake.wasm");
 #[allow(dead_code)]
 static COWSAY_WASM: &[u8] = include_bytes!("wasm/cowsay.wasm");
 
-
 #[cfg(test)]
 use rust_os::test_panic_handler;
 
 default_entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
-    init_kernel(boot_info); 
+    init_kernel(boot_info);
 
     #[cfg(not(test))]
     {

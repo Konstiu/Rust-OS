@@ -63,12 +63,12 @@ impl Executor {
     pub fn run_until_idle(&mut self) {
         loop {
             self.run_ready_tasks();
-            
+
             // Exit if no more tasks
             if self.tasks.is_empty() {
                 break;
             }
-            
+
             self.sleep_if_idle();
         }
     }
