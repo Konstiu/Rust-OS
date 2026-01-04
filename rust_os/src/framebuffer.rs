@@ -43,11 +43,19 @@ pub struct Rgb {
 
 impl Rgb {
     pub const BLACK: Self = Self { r: 0, g: 0, b: 0 };
-    pub const WHITE: Self = Self { r: 255, g: 255, b: 255 };
+    pub const WHITE: Self = Self {
+        r: 255,
+        g: 255,
+        b: 255,
+    };
     pub const RED: Self = Self { r: 255, g: 0, b: 0 };
     pub const GREEN: Self = Self { r: 0, g: 160, b: 0 };
     pub const BRIGHT_GREEN: Self = Self { r: 0, g: 255, b: 0 };
-    pub const DARK_GRAY: Self = Self { r: 32, g: 32, b: 32 };
+    pub const DARK_GRAY: Self = Self {
+        r: 32,
+        g: 32,
+        b: 32,
+    };
 }
 
 // ============================================================================
@@ -95,16 +103,14 @@ pub fn framebuffer_size() -> (usize, usize) {
 
 /// Get the grid size based on the configured cell size
 pub fn grid_size() -> Option<(usize, usize)> {
-    CELL_SIZE.get().map(|cell| {
-        with_framebuffer_writer(|writer| writer.grid_dimensions(*cell))
-    })
+    CELL_SIZE
+        .get()
+        .map(|cell| with_framebuffer_writer(|writer| writer.grid_dimensions(*cell)))
 }
 
 /// Get the framebuffer dimensions and grid dimensions for a given cell size
 pub fn framebuffer_dimensions(cell_size: usize) -> ((usize, usize), (usize, usize)) {
-    with_framebuffer_writer(|writer| {
-        (writer.dimensions(), writer.grid_dimensions(cell_size))
-    })
+    with_framebuffer_writer(|writer| (writer.dimensions(), writer.grid_dimensions(cell_size)))
 }
 
 /// Write a single pixel with the provided RGB color
@@ -133,7 +139,6 @@ macro_rules! print {
     ($($arg:tt)*) => ($crate::framebuffer::_print(format_args!($($arg)*)));
 }
 
-
 #[macro_export]
 macro_rules! println {
     () => ($crate::print!("\n"));
@@ -158,7 +163,6 @@ fn get_rasterized_char(c: char) -> RasterizedChar {
         _get(FALLBACK_CHAR).expect("Failed to get rasterized version of backup char")
     })
 }
-
 
 // ============================================================================
 // FrameBufferWriter Implementation
@@ -186,6 +190,24 @@ impl FrameBufferWriter {
     fn newline(&mut self) {
         self.y_pos += CHAR_RASTER_HEIGHT.val() + LINE_SPACING;
         self.carriage_return()
+    }
+
+    fn backspace(&mut self) {
+        let width = CHAR_RASTER_WIDTH + LETTER_SPACING;
+        if self.x_pos >= BORDER_PADDING + width {
+            self.x_pos -= width;
+            let start_x = self.x_pos;
+            let start_y = self.y_pos;
+
+            // Overwrite the character with a space
+            // write_char will advance x_pos, so we need to reset it
+            // afterwards
+            self.write_char(' ');
+
+            // Restore position to the cleared spot
+            self.x_pos = start_x;
+            self.y_pos = start_y;
+        }
     }
 
     fn carriage_return(&mut self) {
@@ -225,6 +247,7 @@ impl FrameBufferWriter {
         match c {
             '\n' => self.newline(),
             '\r' => self.carriage_return(),
+            '\x08' => self.backspace(),
             c => {
                 let new_xpos = self.x_pos + CHAR_RASTER_WIDTH;
 
@@ -250,7 +273,6 @@ impl FrameBufferWriter {
         }
         self.x_pos += rendered_char.width() + LETTER_SPACING;
     }
-
 
     // ------------------------------------------------------------------------
     // Low-Level Pixel Operations
@@ -357,7 +379,6 @@ impl fmt::Write for FrameBufferWriter {
         Ok(())
     }
 }
-
 
 // ============================================================================
 // Helper Functions

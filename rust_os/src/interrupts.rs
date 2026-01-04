@@ -1,13 +1,13 @@
 use lazy_static::lazy_static;
-use pc_keyboard::{Keyboard, ScancodeSet1, layouts, DecodedKey};
+use pc_keyboard::{Keyboard, ScancodeSet1, layouts};
 use pic8259::ChainedPics;
 use spin::Mutex;
 use x86_64::registers::control::Cr2;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
 
-use crate::{gdt, hlt_loop, println};
+use crate::task::keyboard::add_scancode;
 use crate::wasm_game;
-use crate::serial_println;
+use crate::{gdt, hlt_loop, println};
 use x86_64::instructions::port::Port;
 
 extern "x86-interrupt" fn page_fault_handler(
@@ -66,7 +66,6 @@ enum InterruptIndex {
     Keyboard,
 }
 
-
 impl From<InterruptIndex> for u8 {
     fn from(value: InterruptIndex) -> Self {
         value as u8
@@ -95,9 +94,12 @@ extern "x86-interrupt" fn double_fault_handler(frame: InterruptStackFrame, _: u6
 }
 
 extern "x86-interrupt" fn timer_interrupt_handler(_: InterruptStackFrame) {
-    //print!(".");
-    wasm_game::update_game();
-    wasm_game::render_game();
+
+    if wasm_game::is_game_running() {
+        wasm_game::process_pending_keys();
+        wasm_game::update_game();
+        wasm_game::render_game();
+    }
 
     unsafe {
         PICS.lock()
@@ -106,32 +108,12 @@ extern "x86-interrupt" fn timer_interrupt_handler(_: InterruptStackFrame) {
 }
 
 extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    let mut keyboard = KEYBOARD.lock();
-    let mut ps2_port: Port<u8> =  Port::new(0x60);
+    //let keyboard = KEYBOARD.lock();
+    let mut ps2_port: Port<u8> = Port::new(0x60);
     let scancode = unsafe { ps2_port.read() };
 
-    if let Ok(Some(key_event)) = keyboard.add_byte(scancode)
-        && let Some(key) = keyboard.process_keyevent(key_event) {
-            match key {
-                DecodedKey::Unicode(character) => {
-                    //print!("{character}");
-                    serial_println!("'{}'", character);
-                },
-                DecodedKey::RawKey(raw_key) => {
-                    //print!("{raw_key:?}");
-                    serial_println!("{:?}", raw_key);
-                }
-            }
-            let key_code: u8 = match key {
-                DecodedKey::Unicode(c) => c as u8,
-                DecodedKey::RawKey(code) => code as u8,
-            };
-            wasm_game::handle_key(key_code);
-            wasm_game::update_game();  // Add this
-            wasm_game::render_game();
-            //wasm_game::handle_key(key_code);
-        }
-    
+    add_scancode(scancode);
+
     unsafe {
         PICS.lock()
             .notify_end_of_interrupt(u8::from(InterruptIndex::Keyboard));
@@ -143,5 +125,5 @@ mod tests {
     #[test_case]
     fn test_breakpoint_interrupt() {
         x86_64::instructions::interrupts::int3();
-    }   
+    }
 }

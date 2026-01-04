@@ -23,3 +23,4 @@ ramdisk_test:
 
 clean:
 	rm -f $(RAMDISK_TAR) $(RAMDISK_TEST_TAR)
+	$(CARGO) clean -p rust_os

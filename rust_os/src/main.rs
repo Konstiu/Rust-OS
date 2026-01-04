@@ -5,8 +5,9 @@
 #![reexport_test_harness_main = "test_main"]
 use bootloader_api::BootInfo;
 use core::panic::PanicInfo;
+use rust_os::task::executor::Executor;
+use rust_os::task::{Task, shell};
 use rust_os::{default_entry_point, hlt_loop, init_kernel};
-use rust_os::wasm_game;
 
 extern crate alloc;
 
@@ -15,31 +16,20 @@ static SNAKE_WASM: &[u8] = include_bytes!("wasm/snake.wasm");
 #[allow(dead_code)]
 static COWSAY_WASM: &[u8] = include_bytes!("wasm/cowsay.wasm");
 
-#[cfg(not(test))]
-use rust_os::task::{Task, executor::Executor, keyboard};
 
 #[cfg(test)]
 use rust_os::test_panic_handler;
 
 default_entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
-    init_kernel(boot_info);
-
-
-    //wasm_game::init_wasm_game(SNAKE_WASM);
-    //wasm_game::render_game();
-
-    wasm_game::init_wasm_game(COWSAY_WASM);
-    wasm_game::render_game();
-
+    init_kernel(boot_info); 
 
     #[cfg(not(test))]
-        {
-            let mut executor = Executor::new();
-            executor.spawn(Task::new(keyboard::print_keypresses()));
-            executor.run();
-        }
-
+    {
+        let mut executor = Executor::new();
+        executor.spawn(Task::new(shell::run()));
+        executor.run();
+    }
 
     #[cfg(test)]
     test_main();
