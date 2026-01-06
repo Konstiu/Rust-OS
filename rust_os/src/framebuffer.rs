@@ -20,7 +20,7 @@ const LETTER_SPACING: usize = 0;
 const BORDER_PADDING: usize = 1;
 const CHAR_RASTER_HEIGHT: RasterHeight = RasterHeight::Size16;
 const CHAR_RASTER_WIDTH: usize = get_raster_width(FontWeight::Regular, CHAR_RASTER_HEIGHT);
-const FALLBACK_CHAR: char = '�';
+const FALLBACK_CHAR: char = '?';
 const FONT_WEIGHT: FontWeight = FontWeight::Regular;
 
 // ============================================================================
