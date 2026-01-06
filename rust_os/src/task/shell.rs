@@ -2,8 +2,13 @@ use crate::framebuffer::with_framebuffer_writer;
 use crate::task::keyboard::ScanCodeStream;
 use crate::{print, println};
 use alloc::string::String;
+use alloc::vec::Vec;
 use futures_util::StreamExt;
 use pc_keyboard::{DecodedKey, HandleControl, Keyboard, ScancodeSet1, layouts};
+
+const COMMANDS: &[&str] = &[
+    "help", "echo", "cat", "ls", "version", "clear", "snake", "cowsay",
+];
 
 pub async fn run() {
     let mut scancodes = ScanCodeStream::new();
@@ -57,7 +62,14 @@ fn execute_command(command: &str) {
     }
     match parts[0] {
         "help" => {
-            println!("Available commands: help, echo, cat, ls, version, clear, snake, cowsay")
+            print!("Available commands: ");
+            for (i, cmd) in COMMANDS.iter().enumerate() {
+                if i > 0 {
+                    print!(", ");
+                }
+                print!("{}", cmd);
+            }
+            println!();
         }
         "version" => println!("RustOS v0.1.0"),
         "clear" => with_framebuffer_writer(|writer| writer.clear()),
