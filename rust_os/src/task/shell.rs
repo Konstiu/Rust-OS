@@ -43,6 +43,9 @@ pub async fn run() {
                                 print!("{}", character); // Move cursor back
                             }
                         }
+                        '\t' => {
+                            autocomplete(&mut command_buffer);
+                        }
                         c => {
                             command_buffer.push(c);
                             print!("{}", c);
@@ -50,6 +53,81 @@ pub async fn run() {
                     },
                     DecodedKey::RawKey(_) => {}
                 }
+            }
+        }
+    }
+}
+
+fn autocomplete(buffer: &mut String) {
+    let args: Vec<&str> = buffer.split_whitespace().collect();
+    let is_new_arg = buffer.ends_with(' ');
+
+    if args.is_empty() || (args.len() == 1 && !is_new_arg) {
+        let prefix = if args.is_empty() { "" } else { args[0] };
+
+        let matches: Vec<&str> = COMMANDS
+            .iter()
+            .copied()
+            .filter(|c| c.starts_with(prefix))
+            .collect();
+
+        if matches.len() == 1 {
+            let completion = matches[0];
+            let remaining = &completion[prefix.len()..];
+            buffer.push_str(remaining);
+            buffer.push(' ');
+            print!("{} ", remaining);
+        } else if matches.len() > 1 {
+            println!();
+            for m in matches {
+                print!("{} ", m);
+            }
+            println!();
+            print!("> {}", buffer);
+        }
+    } else {
+        let last_arg = if is_new_arg { "" } else { args.last().unwrap() };
+
+        let (dir, file_prefix) = if let Some(idx) = last_arg.rfind('/') {
+            let d = &last_arg[..idx];
+            let f = &last_arg[idx + 1..];
+            (if d.is_empty() { "/" } else { d }, f)
+        } else {
+            ("/", last_arg)
+        };
+
+        use crate::filesystem::{FileType, with_filesystem};
+
+        let matches = with_filesystem(|fs| {
+            if let Ok(entries) = fs.read_dir(dir) {
+                entries
+                    .into_iter()
+                    .filter(|e| e.name().starts_with(file_prefix))
+                    .map(|e| (String::from(e.name()), e.file_type))
+                    .collect::<Vec<_>>()
+            } else {
+                Vec::new()
+            }
+        });
+
+        if let Some(matches) = matches {
+            if matches.len() == 1 {
+                let (name, ftype) = &matches[0];
+                let remaining = &name[file_prefix.len()..];
+                buffer.push_str(remaining);
+                print!("{}", remaining);
+                if *ftype == FileType::Dir {
+                    buffer.push('/');
+                    print!("/");
+                }
+            } else if matches.len() > 1 {
+                println!();
+                for (name, ftype) in matches {
+                    print!("{}{}", name, if ftype == FileType::Dir { "/" } else { "" });
+                    print!(" ");
+                }
+                println!();
+                print!("> {}", buffer);
             }
         }
     }
