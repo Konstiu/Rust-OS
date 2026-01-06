@@ -1,9 +1,15 @@
+use crate::filesystem::{FileType, with_filesystem};
 use crate::framebuffer::with_framebuffer_writer;
 use crate::task::keyboard::ScanCodeStream;
 use crate::{print, println};
 use alloc::string::String;
+use alloc::vec::Vec;
 use futures_util::StreamExt;
 use pc_keyboard::{DecodedKey, HandleControl, Keyboard, ScancodeSet1, layouts};
+
+const COMMANDS: &[&str] = &[
+    "help", "echo", "cat", "ls", "version", "clear", "snake", "cowsay",
+];
 
 pub async fn run() {
     let mut scancodes = ScanCodeStream::new();
@@ -38,6 +44,9 @@ pub async fn run() {
                                 print!("{}", character); // Move cursor back
                             }
                         }
+                        '\t' => {
+                            autocomplete(&mut command_buffer);
+                        }
                         c => {
                             command_buffer.push(c);
                             print!("{}", c);
@@ -50,6 +59,79 @@ pub async fn run() {
     }
 }
 
+fn autocomplete(buffer: &mut String) {
+    let args: Vec<&str> = buffer.split_whitespace().collect();
+    let is_new_arg = buffer.ends_with(' ');
+
+    if args.is_empty() || (args.len() == 1 && !is_new_arg) {
+        let prefix = if args.is_empty() { "" } else { args[0] };
+
+        let matches: Vec<&str> = COMMANDS
+            .iter()
+            .copied()
+            .filter(|c| c.starts_with(prefix))
+            .collect();
+
+        if matches.len() == 1 {
+            let completion = matches[0];
+            let remaining = &completion[prefix.len()..];
+            buffer.push_str(remaining);
+            buffer.push(' ');
+            print!("{} ", remaining);
+        } else if matches.len() > 1 {
+            println!();
+            for m in matches {
+                print!("{} ", m);
+            }
+            println!();
+            print!("> {}", buffer);
+        }
+    } else {
+        let last_arg = if is_new_arg { "" } else { args.last().unwrap() };
+
+        let (dir, file_prefix) = if let Some(idx) = last_arg.rfind('/') {
+            let d = &last_arg[..idx];
+            let f = &last_arg[idx + 1..];
+            (if d.is_empty() { "/" } else { d }, f)
+        } else {
+            ("/", last_arg)
+        };
+
+        let matches = with_filesystem(|fs| {
+            if let Ok(entries) = fs.read_dir(dir) {
+                entries
+                    .into_iter()
+                    .filter(|e| e.name().starts_with(file_prefix))
+                    .map(|e| (String::from(e.name()), e.file_type))
+                    .collect::<Vec<_>>()
+            } else {
+                Vec::new()
+            }
+        });
+
+        if let Some(matches) = matches {
+            if matches.len() == 1 {
+                let (name, ftype) = &matches[0];
+                let remaining = &name[file_prefix.len()..];
+                buffer.push_str(remaining);
+                print!("{}", remaining);
+                if *ftype == FileType::Dir {
+                    buffer.push('/');
+                    print!("/");
+                }
+            } else if matches.len() > 1 {
+                println!();
+                for (name, ftype) in matches {
+                    print!("{}{}", name, if ftype == FileType::Dir { "/" } else { "" });
+                    print!(" ");
+                }
+                println!();
+                print!("> {}", buffer);
+            }
+        }
+    }
+}
+
 fn execute_command(command: &str) {
     let parts: alloc::vec::Vec<&str> = command.trim().split_whitespace().collect();
     if parts.is_empty() {
@@ -57,7 +139,14 @@ fn execute_command(command: &str) {
     }
     match parts[0] {
         "help" => {
-            println!("Available commands: help, echo, cat, ls, version, clear, snake, cowsay")
+            print!("Available commands: ");
+            for (i, cmd) in COMMANDS.iter().enumerate() {
+                if i > 0 {
+                    print!(", ");
+                }
+                print!("{}", cmd);
+            }
+            println!();
         }
         "version" => println!("RustOS v0.1.0"),
         "clear" => with_framebuffer_writer(|writer| writer.clear()),
@@ -94,8 +183,6 @@ fn execute_command(command: &str) {
 }
 
 fn cmd_ls(path: &str) {
-    use crate::filesystem::with_filesystem;
-
     match with_filesystem(|fs| fs.read_dir(path)) {
         Some(Ok(entries)) => {
             if entries.is_empty() {
@@ -122,8 +209,6 @@ fn cmd_ls(path: &str) {
 }
 
 fn cmd_cat(path: &str) {
-    use crate::filesystem::with_filesystem;
-
     match with_filesystem(|fs| fs.read_to_string(path)) {
         Some(Ok(content)) => print!("{}", content),
         Some(Err(e)) => println!("cat: {}: {:?}", path, e),
