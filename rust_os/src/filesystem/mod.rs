@@ -13,6 +13,8 @@ pub struct FileSystem {
     backend: FsBackendImpl,
 }
 
+unsafe impl Send for FileSystem {}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FileType {
     File,
@@ -77,4 +79,22 @@ impl FileSystem {
             .read_into(&canonicalized_path, position, buffer)?;
         Ok(bytes_read)
     }
+}
+
+use conquer_once::spin::OnceCell;
+use spin::Mutex;
+
+static FILE_SYSTEM: OnceCell<Mutex<FileSystem>> = OnceCell::uninit();
+
+pub fn init_filesystem(ramdisk: &'static [u8]) -> Result<()> {
+    let fs = FileSystem::from_tar(ramdisk.into())?;
+    FILE_SYSTEM.init_once(|| Mutex::new(fs));
+    Ok(())
+}
+
+pub fn with_filesystem<F, R>(f: F) -> Option<R>
+where
+    F: FnOnce(&mut FileSystem) -> R,
+{
+    FILE_SYSTEM.get().map(|fs| f(&mut fs.lock()))
 }

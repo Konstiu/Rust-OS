@@ -27,7 +27,7 @@ pub fn is_game_running() -> bool {
 }
 
 pub fn handle_scancode(scancode: u8) {
-    serial_println!("Scancode received: {}", scancode);
+    //serial_println!("Scancode received: {}", scancode);
 
     let keyboard_mutex = GAME_KEYBOARD.get_or_init(|| {
         Mutex::new(Keyboard::new(
@@ -41,10 +41,10 @@ pub fn handle_scancode(scancode: u8) {
 
     match keyboard.add_byte(scancode) {
         Ok(Some(key_event)) => {
-            serial_println!("KeyEvent received: {:?}", key_event);
+            //serial_println!("KeyEvent received: {:?}", key_event);
 
             if let Some(key) = keyboard.process_keyevent(key_event) {
-                serial_println!("DecodedKey: {:?}", key);
+                //serial_println!("DecodedKey: {:?}", key);
 
                 let is_escape = matches!(key, DecodedKey::RawKey(pc_keyboard::KeyCode::Escape))
                     || matches!(key, DecodedKey::Unicode('\u{1b}'));
@@ -73,14 +73,14 @@ pub fn handle_scancode(scancode: u8) {
                     }
                 };
 
-                serial_println!("Sending key_code to WASM: {}", key_code);
+                //serial_println!("Sending key_code to WASM: {}", key_code);
                 *PENDING_KEY.lock() = Some(key_code);
                 //handle_key(key_code);
                 //render_game();
             }
         }
         Ok(None) => {
-            serial_println!("add_byte returned None (partial sequence)");
+            //serial_println!("add_byte returned None (partial sequence)");
         }
         Err(e) => {
             serial_println!("add_byte error: {:?}", e);
@@ -90,7 +90,7 @@ pub fn handle_scancode(scancode: u8) {
 
 pub fn process_pending_keys() {
     if let Some(key_code) = PENDING_KEY.lock().take() {
-        serial_println!("Processing queued key_code: {}", key_code);
+        //serial_println!("Processing queued key_code: {}", key_code);
         handle_key(key_code);
     }
 }
@@ -317,7 +317,7 @@ fn register_framebuffer_functions<T>(linker: &mut Linker<T>) {
 
             // Convert to string and print
             if let Ok(s) = core::str::from_utf8(&buffer[..len]) {
-                crate::serial_println!("WASM println: ptr={}, len={}, str='{}'", ptr, len, s);
+                //crate::serial_println!("WASM println: ptr={}, len={}, str='{}'", ptr, len, s);
                 crate::println!("{}", s);
             }
         })
