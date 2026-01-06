@@ -1,3 +1,4 @@
+use crate::filesystem::{FileType, with_filesystem};
 use crate::framebuffer::with_framebuffer_writer;
 use crate::task::keyboard::ScanCodeStream;
 use crate::{print, println};
@@ -96,8 +97,6 @@ fn autocomplete(buffer: &mut String) {
             ("/", last_arg)
         };
 
-        use crate::filesystem::{FileType, with_filesystem};
-
         let matches = with_filesystem(|fs| {
             if let Ok(entries) = fs.read_dir(dir) {
                 entries
@@ -184,8 +183,6 @@ fn execute_command(command: &str) {
 }
 
 fn cmd_ls(path: &str) {
-    use crate::filesystem::with_filesystem;
-
     match with_filesystem(|fs| fs.read_dir(path)) {
         Some(Ok(entries)) => {
             if entries.is_empty() {
@@ -212,8 +209,6 @@ fn cmd_ls(path: &str) {
 }
 
 fn cmd_cat(path: &str) {
-    use crate::filesystem::with_filesystem;
-
     match with_filesystem(|fs| fs.read_to_string(path)) {
         Some(Ok(content)) => print!("{}", content),
         Some(Err(e)) => println!("cat: {}: {:?}", path, e),
