@@ -8,7 +8,7 @@ use futures_util::StreamExt;
 use pc_keyboard::{DecodedKey, HandleControl, Keyboard, ScancodeSet1, layouts};
 
 const COMMANDS: &[&str] = &[
-    "help", "echo", "cat", "ls", "version", "clear", "snake", "cowsay", "exec"
+    "help", "echo", "cat", "ls", "version", "clear", "exec"
 ];
 
 pub async fn run() {
