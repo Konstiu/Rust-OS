@@ -163,7 +163,13 @@ fn execute_command(command: &str) {
                 cmd_cat(parts[1]);
             }
         }
-        s if s.starts_with("echo ") => println!("{}", &s[5..]),
+        "echo" => {
+            if parts.len() < 2 {
+                println!("Usage: echo <text>");
+            } else {
+                println!("{}", parts[1..].join(" "));
+            }
+        }
         "" => {}
         cmd => println!(
             "Unknown command: '{}'. Type 'help' for a list of commands.",
