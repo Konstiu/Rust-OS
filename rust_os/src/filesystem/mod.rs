@@ -81,10 +81,8 @@ impl FileSystem {
     }
 }
 
-
-
-use spin::Mutex;
 use conquer_once::spin::OnceCell;
+use spin::Mutex;
 
 static FILE_SYSTEM: OnceCell<Mutex<FileSystem>> = OnceCell::uninit();
 

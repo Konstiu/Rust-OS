@@ -51,12 +51,14 @@ pub async fn run() {
 }
 
 fn execute_command(command: &str) {
-        let parts: alloc::vec::Vec<&str> = command.trim().split_whitespace().collect();
-        if parts.is_empty() {
-            return;
+    let parts: alloc::vec::Vec<&str> = command.trim().split_whitespace().collect();
+    if parts.is_empty() {
+        return;
+    }
+    match parts[0] {
+        "help" => {
+            println!("Available commands: help, echo, cat, ls, version, clear, snake, cowsay")
         }
-        match parts[0] {
-        "help" => println!("Available commands: help, echo, cat, ls, version, clear, snake, cowsay"),
         "version" => println!("RustOS v0.1.0"),
         "clear" => with_framebuffer_writer(|writer| writer.clear()),
         "snake" => {
@@ -91,10 +93,9 @@ fn execute_command(command: &str) {
     }
 }
 
-
 fn cmd_ls(path: &str) {
     use crate::filesystem::with_filesystem;
-    
+
     match with_filesystem(|fs| fs.read_dir(path)) {
         Some(Ok(entries)) => {
             if entries.is_empty() {
@@ -122,7 +123,7 @@ fn cmd_ls(path: &str) {
 
 fn cmd_cat(path: &str) {
     use crate::filesystem::with_filesystem;
-    
+
     match with_filesystem(|fs| fs.read_to_string(path)) {
         Some(Ok(content)) => print!("{}", content),
         Some(Err(e)) => println!("cat: {}: {:?}", path, e),

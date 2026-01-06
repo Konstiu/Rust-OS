@@ -5,10 +5,10 @@
 #![reexport_test_harness_main = "test_main"]
 use bootloader_api::BootInfo;
 use core::panic::PanicInfo;
+use core::slice;
 use rust_os::task::executor::Executor;
 use rust_os::task::{Task, shell};
 use rust_os::{default_entry_point, hlt_loop, init_kernel};
-use core::slice;
 
 extern crate alloc;
 
@@ -27,15 +27,13 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
         .into_option()
         .expect("Could not get ramdisk address from boot info");
 
-    let ramdisk = unsafe { 
-        slice::from_raw_parts(ramdisk_addr as *const u8, boot_info.ramdisk_len as usize) 
-    };
+    let ramdisk =
+        unsafe { slice::from_raw_parts(ramdisk_addr as *const u8, boot_info.ramdisk_len as usize) };
     init_kernel(boot_info);
 
     #[cfg(not(test))]
     {
-        rust_os::filesystem::init_filesystem(ramdisk)
-            .expect("Failed to initialize filesystem");
+        rust_os::filesystem::init_filesystem(ramdisk).expect("Failed to initialize filesystem");
         let mut executor = Executor::new();
         executor.spawn(Task::new(shell::run()));
         executor.run();
