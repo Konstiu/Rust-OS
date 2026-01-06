@@ -2,13 +2,14 @@ use crate::filesystem::{FileType, with_filesystem};
 use crate::framebuffer::with_framebuffer_writer;
 use crate::task::keyboard::ScanCodeStream;
 use crate::{print, println};
+use crate::filesystem::with_filesystem;
 use alloc::string::String;
 use alloc::vec::Vec;
 use futures_util::StreamExt;
 use pc_keyboard::{DecodedKey, HandleControl, Keyboard, ScancodeSet1, layouts};
 
 const COMMANDS: &[&str] = &[
-    "help", "echo", "cat", "ls", "version", "clear", "snake", "cowsay",
+    "help", "echo", "cat", "ls", "version", "clear", "snake", "cowsay", "exec"
 ];
 
 pub async fn run() {
@@ -150,17 +151,9 @@ fn execute_command(command: &str) {
         }
         "version" => println!("RustOS v0.1.0"),
         "clear" => with_framebuffer_writer(|writer| writer.clear()),
-        "snake" => {
-            println!("Starting Snake...");
-            with_framebuffer_writer(|writer| writer.clear());
-            let wasm_bytes = include_bytes!("../wasm/snake.wasm");
-            crate::wasm_game::init_wasm_game(wasm_bytes);
-        }
-        "cowsay" => {
-            println!("Starting Cowsay...");
-            with_framebuffer_writer(|writer| writer.clear());
-            let wasm_bytes = include_bytes!("../wasm/cowsay.wasm");
-            crate::wasm_game::init_wasm_game(wasm_bytes);
+        "exec" => {
+            let path = parts.get(1).copied().unwrap_or("/");
+            cmd_exec(path);
         }
         "ls" => {
             let path = parts.get(1).copied().unwrap_or("/");
@@ -214,4 +207,26 @@ fn cmd_cat(path: &str) {
         Some(Err(e)) => println!("cat: {}: {:?}", path, e),
         None => println!("cat: filesystem not initialized"),
     }
+}
+
+fn cmd_exec(path: &str) {
+    if !path.ends_with(".wasm") {
+        println!("exec: {}: expected .wasm file", path);
+        return;
+    }
+    let wasm_bytes = match with_filesystem(|fs| fs.read(path)) {
+        Some(Ok(content)) => content,
+        Some(Err(e)) => {
+            println!("exec: {}: {:?}", path, e);
+            return;
+        }
+        None => {
+            println!("exec: filesystem not initialized");
+            return;
+        }
+    };
+    println!("Starting game {path} ...");
+
+    with_framebuffer_writer(|w| w.clear());
+    crate::wasm_game::init_wasm_game(&wasm_bytes);
 }

@@ -96,7 +96,7 @@ pub fn process_pending_keys() {
 }
 
 /// Initialize and start the WASM Snake game
-pub fn init_wasm_game(wasm_bytes: &'static [u8]) {
+pub fn init_wasm_game(wasm_bytes: &[u8]) {
     let engine = Engine::default();
     let module = Module::new(&engine, wasm_bytes).expect("Failed to parse WASM module");
 
