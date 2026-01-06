@@ -2,7 +2,6 @@ use crate::filesystem::{FileType, with_filesystem};
 use crate::framebuffer::with_framebuffer_writer;
 use crate::task::keyboard::ScanCodeStream;
 use crate::{print, println};
-use crate::filesystem::with_filesystem;
 use alloc::string::String;
 use alloc::vec::Vec;
 use futures_util::StreamExt;
