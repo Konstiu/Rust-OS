@@ -213,7 +213,7 @@ This project closely follows some concepts from the excellent
 
 Another repository for the same course project can be found at:
 
-- <https://github.com/rettetdemdativ/lowlevel-programming-2025w>
+- <https://github.com/rettetdemdativ/rust-os>
 
 ---
 
